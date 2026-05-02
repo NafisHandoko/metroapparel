@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { formatIdr, minPriceForKind } from "@/lib/data/catalog";
 import type { Product } from "@/lib/data/site";
 
 type ProductCardProps = {
@@ -10,6 +11,7 @@ type ProductCardProps = {
 };
 
 export function ProductCard({ product }: ProductCardProps) {
+  const from = minPriceForKind(product.kind);
   return (
     <Link href={`/products/${product.handle}`} className="group block">
       <Card className="overflow-hidden border-white/10 transition-all duration-300 hover:border-brand/40 hover:shadow-[0_0_40px_-12px_rgba(158,255,0,0.35)]">
@@ -28,6 +30,9 @@ export function ProductCard({ product }: ProductCardProps) {
           <h3 className="font-display text-lg tracking-wide text-foreground group-hover:text-brand">
             {product.name}
           </h3>
+          <p className="mt-1 text-xs font-medium text-brand">
+            Mulai {formatIdr(from)}
+          </p>
         </CardContent>
       </Card>
     </Link>

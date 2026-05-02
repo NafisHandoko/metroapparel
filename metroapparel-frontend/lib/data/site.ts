@@ -1,3 +1,5 @@
+import type { ProductKind } from "@/lib/data/catalog";
+
 export const site = {
   name: "Metro Apparel",
   tagline: "Custom jersey & apparel produksi lokal, kualitas premium.",
@@ -18,32 +20,46 @@ export const stats = [
 
 export const categories = [
   {
-    slug: "jersey",
-    name: "Jersey",
-    description: "Full custom, tim futsal, football, esports.",
+    slug: "jersey-atasan",
+    name: "Jersey Atasan",
+    description: "Essential, Elite, Prime — custom tim & komunitas.",
     image:
       "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=800&q=80",
   },
   {
-    slug: "pdh",
-    name: "PDH",
-    description: "Seragam dinas harian rapi untuk instansi & sekolah.",
+    slug: "jersey-satu-set",
+    name: "Jersey Satu Set",
+    description: "Regular hingga Ultimate — full set match & esports.",
     image:
-      "https://images.unsplash.com/photo-1594938298603-c814d25835e0?w=800&q=80",
+      "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80",
   },
   {
-    slug: "polo",
-    name: "Polo",
-    description: "Corporate & komunitas dengan branding halus.",
+    slug: "training-pants",
+    name: "Training Pants",
+    description: "Lotto — full print atau non printing.",
     image:
-      "https://images.unsplash.com/photo-1586790170083-413f9a6a39ee?w=800&q=80",
+      "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&q=80",
   },
   {
     slug: "jaket",
     name: "Jaket",
-    description: "Outerwear tim & event dengan detail premium.",
+    description: "Lotto — printing atau non printing + bordir.",
     image:
       "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=80",
+  },
+  {
+    slug: "short-pants",
+    name: "Short Pants",
+    description: "Lotto — full print atau print samping.",
+    image:
+      "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&q=80",
+  },
+  {
+    slug: "polo",
+    name: "Polo",
+    description: "CVC 24S — polo bordir untuk corporate & komunitas.",
+    image:
+      "https://images.unsplash.com/photo-1622445275571-3f7462c0068c?w=800&q=80",
   },
 ];
 
@@ -54,7 +70,7 @@ export const categorySlugToName: Record<string, string> = Object.fromEntries(
 export const whyUs = [
   {
     title: "Bahan premium",
-    body: "Kain dry-fit & drill pilihan yang breathable, tahan lama, dan nyaman dipakai seharian.",
+    body: "Dryfit premium, Lotto, CVC 24S — sesuai paket yang kamu pilih.",
   },
   {
     title: "Desain custom gratis",
@@ -65,8 +81,8 @@ export const whyUs = [
     body: "Workflow terstruktur untuk MOQ tim — timeline jelas tanpa drama revisi.",
   },
   {
-    title: "Harga kompetitif",
-    body: "Skala B2B & komunitas dengan transparansi harga per qty, tanpa biaya tersembunyi.",
+    title: "Harga transparan",
+    body: "Pricelist jelas per paket, opsi kerah & add-on — konfirmasi final via WhatsApp.",
   },
 ];
 
@@ -76,6 +92,7 @@ export type Product = {
   category: string;
   image: string;
   description: string;
+  kind: ProductKind;
 };
 
 export function getProductByHandle(handle: string): Product | undefined {
@@ -84,58 +101,64 @@ export function getProductByHandle(handle: string): Product | undefined {
 
 export const products: Product[] = [
   {
-    handle: "pro-kit-esports",
-    name: "Pro Kit Esports",
-    category: "Jersey",
+    handle: "jersey-atasan",
+    name: "Jersey Atasan",
+    category: "Jersey Atasan",
+    kind: "jersey-top",
     image:
       "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=900&q=80",
     description:
-      "Cutting oversized, panel kontras, dan finishing sublimasi tajam untuk roster kompetitif.",
+      "Produk utama: jersey bagian atas dengan tiga paket — Essential, Elite, dan Prime. Pilih kerah, ukuran, oversize, dan add-on; ringkasan bisa langsung dikirim ke WhatsApp.",
   },
   {
-    handle: "velocity-futsal",
-    name: "Velocity Futsal",
-    category: "Jersey",
-    image:
-      "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=900&q=80",
-    description:
-      "Siluet atletis, ventilasi mesh strategis, dan warna solid untuk performa indoor.",
-  },
-  {
-    handle: "academy-football",
-    name: "Academy Football",
-    category: "Jersey",
+    handle: "jersey-satu-set",
+    name: "Jersey Satu Set",
+    category: "Jersey Satu Set",
+    kind: "jersey-set",
     image:
       "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=900&q=80",
     description:
-      "Strip klasik dengan tekstur ringan, cocok untuk sekolah & akademi sepak bola.",
+      "Set lengkap atasan + celana: Regular (Basic), Standard (paling populer), Premium, dan Ultimate. Cocok untuk match day, liga, dan tim esports.",
   },
   {
-    handle: "urban-polo",
-    name: "Urban Polo",
-    category: "Polo",
+    handle: "training-pants",
+    name: "Training Pants",
+    category: "Training Pants",
+    kind: "training-pants",
     image:
-      "https://images.unsplash.com/photo-1622445275571-3f7462c0068c?w=900&q=80",
+      "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=900&q=80",
     description:
-      "Pique premium, kerah tegas, branding bordir halus untuk corporate & komunitas.",
+      "Celana training bahan Lotto: opsi full printing atau non printing. Pilih ukuran & add-on di bawah.",
   },
   {
-    handle: "command-pdh",
-    name: "Command PDH",
-    category: "PDH",
-    image:
-      "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=900&q=80",
-    description:
-      "Set dinas harian formal dengan potongan presisi dan warna institusional konsisten.",
-  },
-  {
-    handle: "night-run-jacket",
-    name: "Night Run Jacket",
+    handle: "jaket",
+    name: "Jaket",
     category: "Jaket",
+    kind: "jacket",
     image:
       "https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=900&q=80",
     description:
-      "Shell ringan, reflektif minimal, dan aksen neon untuk tim lari & event outdoor.",
+      "Jaket bahan Lotto: varian printing atau non printing + bordir. Pilih paket, ukuran, dan opsi tambahan.",
+  },
+  {
+    handle: "short-pants",
+    name: "Short Pants",
+    category: "Short Pants",
+    kind: "short-pants",
+    image:
+      "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=900&q=80",
+    description:
+      "Celana pendek Lotto: full printing atau print samping.",
+  },
+  {
+    handle: "polo",
+    name: "Polo",
+    category: "Polo",
+    kind: "polo",
+    image:
+      "https://images.unsplash.com/photo-1622445275571-3f7462c0068c?w=900&q=80",
+    description:
+      "Polo bordir material CVC 24S — untuk corporate, sekolah, dan komunitas.",
   },
 ];
 
@@ -192,7 +215,7 @@ export const faqItems = [
   },
   {
     q: "Apakah desain bisa full custom?",
-    a: "Ya. Kami bantu dari konsep, palet warna, typography, hingga mockup 3D. Revisi desain tidak dikenakan biaya tambahan dalam paket standar.",
+    a: "Ya. Kami bantu dari konsep, palet warna, typography, hingga mockup. Revisi desain dikonsultasikan per paket.",
   },
   {
     q: "Area pengiriman?",

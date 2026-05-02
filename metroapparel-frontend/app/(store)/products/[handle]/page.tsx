@@ -2,10 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
+import { ProductConfigurator } from "@/components/product/product-configurator";
 import { Badge } from "@/components/ui/badge";
+import { formatIdr, minPriceForKind, tiersForKind } from "@/lib/data/catalog";
 import { getProductByHandle, products, site } from "@/lib/data/site";
-import { getWhatsAppLink } from "@/lib/whatsapp";
 import type { Metadata } from "next";
 
 type PageProps = { params: Promise<{ handle: string }> };
@@ -29,9 +29,11 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const product = getProductByHandle(handle);
   if (!product) notFound();
 
-  const wa = getWhatsAppLink(
-    `Halo ${site.name}, saya tertarik dengan produk "${product.name}" (${handle}). Mohon info harga & MOQ.`,
-  );
+  const tierCount = tiersForKind(product.kind).length;
+  const priceHint =
+    tierCount > 1
+      ? `${formatIdr(minPriceForKind(product.kind))} – lihat paket di bawah`
+      : formatIdr(minPriceForKind(product.kind));
 
   return (
     <div className="border-b border-white/10 pb-20 pt-10 sm:pt-14">
@@ -59,32 +61,26 @@ export default async function ProductDetailPage({ params }: PageProps) {
             <h1 className="mt-4 font-display text-4xl tracking-tight text-foreground sm:text-5xl md:text-6xl">
               {product.name}
             </h1>
-            <p className="mt-6 text-base leading-relaxed text-muted sm:text-lg">
+            <p className="mt-2 text-sm font-medium text-brand">Referensi: {priceHint}</p>
+            <p className="mt-4 text-base leading-relaxed text-muted sm:text-lg">
               {product.description}
             </p>
-            <ul className="mt-8 space-y-3 text-sm text-muted">
-              <li className="flex gap-2">
-                <span className="text-brand">—</span>
-                Sublimasi / bordir sesuai kebutuhan branding
-              </li>
-              <li className="flex gap-2">
-                <span className="text-brand">—</span>
-                Size run lengkap untuk tim & institusi
-              </li>
-              <li className="flex gap-2">
-                <span className="text-brand">—</span>
-                Mockup & revisi desain termasuk konsultasi awal
-              </li>
-            </ul>
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-              <Button asChild size="xl">
-                <a href={wa} target="_blank" rel="noreferrer">
-                  Pesan via WhatsApp
-                </a>
-              </Button>
-              <Button asChild variant="outline" size="xl">
-                <Link href="/products">Lihat produk lain</Link>
-              </Button>
+            <p className="mt-6 text-sm text-muted">
+              Pilih paket, ukuran (S–XXXL), opsi oversize, kerah (untuk jersey), dan
+              add-on — lalu kirim ringkasan ke WhatsApp untuk konfirmasi admin.
+            </p>
+            <ProductConfigurator
+              productName={product.name}
+              productHandle={product.handle}
+              kind={product.kind}
+            />
+            <div className="mt-8">
+              <Link
+                href="/products"
+                className="text-sm font-medium text-muted transition-colors hover:text-brand"
+              >
+                ← Lihat produk lain
+              </Link>
             </div>
           </div>
         </div>
