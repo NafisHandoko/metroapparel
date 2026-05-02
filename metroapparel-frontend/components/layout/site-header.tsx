@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -15,9 +16,15 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="font-display text-xl tracking-tight text-foreground">
-          {site.name}
-          <span className="ml-1 text-brand">.</span>
+        <Link href="/" className="relative block h-9 w-36 shrink-0 sm:h-10 sm:w-44">
+          <Image
+            src="/logo-with-text.png"
+            alt={`${site.name} — beranda`}
+            fill
+            className="object-contain object-left"
+            sizes="(max-width: 640px) 144px, 176px"
+            priority
+          />
         </Link>
         <nav className="hidden items-center gap-8 md:flex">
           {nav.map((item) => (
