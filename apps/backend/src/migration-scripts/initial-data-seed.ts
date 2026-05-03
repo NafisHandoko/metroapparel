@@ -26,7 +26,13 @@ const COUNTRY_ID = "id";
 const METRO_SEED_SALES_CHANNEL_NAME = "Metro Apparel Store";
 const METRO_WORKSHOP_LOCATION_NAME = "Metro Workshop";
 const METRO_FULFILLMENT_SET_NAME = "Metro delivery";
+/** Fulfillment set bertipe `pickup` - muncul sebagai blok Pickup terpisah di Admin lokasi. */
+const METRO_PICKUP_FULFILLMENT_SET_NAME = "Metro pickup";
+const METRO_PICKUP_SERVICE_ZONE_NAME = "Zona pickup workshop";
 const METRO_STORE_NAME = "Metro Apparel";
+/** Nama opsi di DB - dipakai seed idempotent & label di toko. */
+const METRO_SHIPPING_OPTION_REGULER = "Pengiriman reguler";
+const METRO_SHIPPING_OPTION_PICKUP = "Pickup di workshop";
 
 function errorMessage(e: unknown): string {
   if (e instanceof Error) return e.message;
@@ -41,7 +47,7 @@ function errorMessage(e: unknown): string {
 }
 
 /**
- * Metro catalog seed — tier **names** (opsi Medusa `Paket`) harus sama persis dengan
+ * Metro catalog seed - tier **names** (opsi Medusa `Paket`) harus sama persis dengan
  * label paket di `apps/storefront/lib/data/catalog.ts` agar configurator & varian toko selaras.
  * Kerah, oversize, dan add-on tetap dihitung di storefront (pricelist workshop), bukan di varian Medusa.
  */
@@ -84,7 +90,7 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
     categoryHandle: "jersey-atasan",
     metro_kind: "jersey-top",
     description:
-      "Produk utama: jersey bagian atas dengan tiga paket — Essential, Elite, dan Prime. Pilih kerah, ukuran, oversize, dan add-on; ringkasan bisa langsung dikirim ke WhatsApp.",
+      "Produk utama: jersey bagian atas dengan tiga paket - Essential, Elite, dan Prime. Pilih kerah, ukuran, oversize, dan add-on; ringkasan bisa langsung dikirim ke WhatsApp.",
     imageUrls: [
       "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=900&q=80",
     ],
@@ -165,7 +171,7 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
     categoryHandle: "polo",
     metro_kind: "polo",
     description:
-      "Polo bordir material CVC 24S — untuk corporate, sekolah, dan komunitas.",
+      "Polo bordir material CVC 24S - untuk corporate, sekolah, dan komunitas.",
     imageUrls: [
       "https://images.unsplash.com/photo-1622445275571-3f7462c0068c?w=900&q=80",
     ],
@@ -228,6 +234,7 @@ type StockLocationRow = { id: string; name?: string };
 type FulfillmentSetRow = {
   id: string;
   name?: string;
+  type?: string | null;
   service_zones?: { id: string; name?: string }[] | null;
 };
 
@@ -429,7 +436,7 @@ export default async function initial_data_seed({
     });
   } catch (e) {
     logger.warn(
-      `Link stock_location ↔ fulfillment provider: ${errorMessage(e)} (biasanya sudah ada)`
+      `Link stock_location <-> fulfillment provider: ${errorMessage(e)} (biasanya sudah ada)`
     );
   }
 
@@ -441,10 +448,14 @@ export default async function initial_data_seed({
 
   const { data: existingFulfillmentSets } = await query.graph({
     entity: "fulfillment_set",
-    fields: ["id", "name", "service_zones.id", "service_zones.name"],
+    fields: ["id", "name", "type", "service_zones.id", "service_zones.name"],
   });
   const fsRows = (existingFulfillmentSets ?? []) as FulfillmentSetRow[];
-  let fulfillmentSet = fsRows.find((f) => f.name === METRO_FULFILLMENT_SET_NAME);
+
+  let fulfillmentSet =
+    fsRows.find(
+      (f) => f.name === METRO_FULFILLMENT_SET_NAME && f.type === "shipping"
+    ) ?? fsRows.find((f) => f.name === METRO_FULFILLMENT_SET_NAME);
 
   if (!fulfillmentSet) {
     const created = await fulfillmentModuleService.createFulfillmentSets({
@@ -463,13 +474,13 @@ export default async function initial_data_seed({
       ],
     });
     fulfillmentSet = created as unknown as FulfillmentSetRow;
-    logger.info(`Fulfillment set dibuat: ${fulfillmentSet.id}`);
+    logger.info(`Fulfillment set (shipping) dibuat: ${fulfillmentSet.id}`);
   } else {
-    logger.info(`Fulfillment set dipakai ulang: ${fulfillmentSet.id}`);
+    logger.info(`Fulfillment set (shipping) dipakai ulang: ${fulfillmentSet.id}`);
   }
 
-  const serviceZoneId = fulfillmentSet.service_zones?.[0]?.id;
-  if (!serviceZoneId) {
+  const shippingServiceZoneId = fulfillmentSet.service_zones?.[0]?.id;
+  if (!shippingServiceZoneId) {
     throw new Error(
       `Fulfillment set "${METRO_FULFILLMENT_SET_NAME}" tidak punya service_zone; periksa data DB.`
     );
@@ -486,52 +497,193 @@ export default async function initial_data_seed({
     });
   } catch (e) {
     logger.warn(
-      `Link stock_location ↔ fulfillment_set: ${errorMessage(e)} (biasanya sudah ada)`
+      `Link stock_location <-> fulfillment_set (shipping): ${errorMessage(e)} (biasanya sudah ada)`
     );
   }
 
-  try {
-    await createShippingOptionsWorkflow(container).run({
-      input: [
+  let pickupFulfillmentSet = fsRows.find(
+    (f) => f.name === METRO_PICKUP_FULFILLMENT_SET_NAME && f.type === "pickup"
+  );
+
+  if (!pickupFulfillmentSet) {
+    const createdPickup = await fulfillmentModuleService.createFulfillmentSets({
+      name: METRO_PICKUP_FULFILLMENT_SET_NAME,
+      type: "pickup",
+      service_zones: [
         {
-          name: "Pengiriman reguler",
-          price_type: "flat",
-          provider_id: "manual_manual",
-          service_zone_id: serviceZoneId,
-          shipping_profile_id: shippingProfile.id,
-          type: {
-            label: "Reguler",
-            description: "Kurir ke seluruh Indonesia.",
-            code: "standard",
-          },
-          prices: [
+          name: METRO_PICKUP_SERVICE_ZONE_NAME,
+          geo_zones: [
             {
-              currency_code: "idr",
-              amount: 25_000,
-            },
-            {
-              region_id: region.id,
-              amount: 25_000,
-            },
-          ],
-          rules: [
-            {
-              attribute: "enabled_in_store",
-              value: "true",
-              operator: "eq",
-            },
-            {
-              attribute: "is_return",
-              value: "false",
-              operator: "eq",
+              country_code: COUNTRY_ID,
+              type: "country",
             },
           ],
         },
       ],
     });
+    pickupFulfillmentSet = createdPickup as unknown as FulfillmentSetRow;
+    logger.info(`Fulfillment set (pickup) dibuat: ${pickupFulfillmentSet.id}`);
+  } else {
+    logger.info(`Fulfillment set (pickup) dipakai ulang: ${pickupFulfillmentSet.id}`);
+  }
+
+  const pickupServiceZoneId = pickupFulfillmentSet.service_zones?.[0]?.id;
+  if (!pickupServiceZoneId) {
+    throw new Error(
+      `Fulfillment set "${METRO_PICKUP_FULFILLMENT_SET_NAME}" tidak punya service_zone; periksa data DB.`
+    );
+  }
+
+  try {
+    await link.create({
+      [Modules.STOCK_LOCATION]: {
+        stock_location_id: stockLocation.id,
+      },
+      [Modules.FULFILLMENT]: {
+        fulfillment_set_id: pickupFulfillmentSet.id,
+      },
+    });
   } catch (e) {
     logger.warn(
-      `createShippingOptionsWorkflow: ${errorMessage(e)} (biasanya opsi pengiriman sudah ada)`
+      `Link stock_location <-> fulfillment_set (pickup): ${errorMessage(e)} (biasanya sudah ada)`
+    );
+  }
+
+  const { data: existingShippingOptions } = await query.graph({
+    entity: "shipping_option",
+    fields: ["id", "name", "service_zone_id"],
+  });
+  const allOpts = (existingShippingOptions ?? []) as {
+    id: string;
+    name?: string;
+    service_zone_id?: string;
+  }[];
+
+  const misplacedPickupOnShipping = allOpts.filter(
+    (o) =>
+      o.name === METRO_SHIPPING_OPTION_PICKUP &&
+      o.service_zone_id === shippingServiceZoneId
+  );
+  if (misplacedPickupOnShipping.length > 0) {
+    logger.warn(
+      `Opsi "${METRO_SHIPPING_OPTION_PICKUP}" masih tertaut ke zona pengiriman (Indonesia). Hapus manual di Admin -> Lokasi -> ${METRO_WORKSHOP_LOCATION_NAME} -> bagian Shipping agar tidak dobel; seed sekarang memakai blok Pickup + zona "${METRO_PICKUP_SERVICE_ZONE_NAME}".`
+    );
+  }
+
+  const inShippingZone = allOpts.filter(
+    (o) => o.service_zone_id === shippingServiceZoneId
+  );
+  const inPickupZone = allOpts.filter(
+    (o) => o.service_zone_id === pickupServiceZoneId
+  );
+  const hasReguler = inShippingZone.some(
+    (o) => o.name === METRO_SHIPPING_OPTION_REGULER
+  );
+  const hasPickupOnPickupZone = inPickupZone.some(
+    (o) => o.name === METRO_SHIPPING_OPTION_PICKUP
+  );
+
+  const optionRules = [
+    {
+      attribute: "enabled_in_store",
+      value: "true",
+      operator: "eq" as const,
+    },
+    {
+      attribute: "is_return",
+      value: "false",
+      operator: "eq" as const,
+    },
+  ];
+
+  type SeedShippingOptionInput = {
+    name: string;
+    price_type: "flat";
+    provider_id: string;
+    service_zone_id: string;
+    shipping_profile_id: string;
+    type: { label: string; description: string; code: string };
+    prices: Array<
+      | { currency_code: string; amount: number }
+      | { region_id: string; amount: number }
+    >;
+    rules: typeof optionRules;
+  };
+
+  const shippingToCreate: SeedShippingOptionInput[] = [];
+
+  if (!hasReguler) {
+    shippingToCreate.push({
+      name: METRO_SHIPPING_OPTION_REGULER,
+      price_type: "flat",
+      provider_id: "manual_manual",
+      service_zone_id: shippingServiceZoneId,
+      shipping_profile_id: shippingProfile.id,
+      type: {
+        label: "Reguler",
+        description: "Kurir ke seluruh Indonesia.",
+        code: "standard",
+      },
+      prices: [
+        { currency_code: "idr", amount: 25_000 },
+        { region_id: region.id, amount: 25_000 },
+      ],
+      rules: optionRules,
+    });
+  }
+
+  if (shippingToCreate.length > 0) {
+    try {
+      await createShippingOptionsWorkflow(container).run({
+        input: shippingToCreate as never,
+      });
+      logger.info(
+        `Opsi shipping baru: ${shippingToCreate.map((o) => o.name).join(", ")}`
+      );
+    } catch (e) {
+      logger.warn(`createShippingOptionsWorkflow (shipping): ${errorMessage(e)}`);
+    }
+  } else {
+    logger.info(
+      `Opsi "${METRO_SHIPPING_OPTION_REGULER}" di zona pengiriman sudah ada - dilewati.`
+    );
+  }
+
+  const pickupToCreate: SeedShippingOptionInput[] = [];
+  if (!hasPickupOnPickupZone) {
+    pickupToCreate.push({
+      name: METRO_SHIPPING_OPTION_PICKUP,
+      price_type: "flat",
+      provider_id: "manual_manual",
+      service_zone_id: pickupServiceZoneId,
+      shipping_profile_id: shippingProfile.id,
+      type: {
+        label: "Pickup",
+        description: "Ambil sendiri di lokasi Metro.",
+        code: "pickup",
+      },
+      prices: [
+        { currency_code: "idr", amount: 0 },
+        { region_id: region.id, amount: 0 },
+      ],
+      rules: optionRules,
+    });
+  }
+
+  if (pickupToCreate.length > 0) {
+    try {
+      await createShippingOptionsWorkflow(container).run({
+        input: pickupToCreate as never,
+      });
+      logger.info(
+        `Opsi pickup baru: ${pickupToCreate.map((o) => o.name).join(", ")}`
+      );
+    } catch (e) {
+      logger.warn(`createShippingOptionsWorkflow (pickup): ${errorMessage(e)}`);
+    }
+  } else {
+    logger.info(
+      `Opsi "${METRO_SHIPPING_OPTION_PICKUP}" di zona pickup sudah ada - dilewati.`
     );
   }
 

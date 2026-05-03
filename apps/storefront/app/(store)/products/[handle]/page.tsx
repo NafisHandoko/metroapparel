@@ -68,10 +68,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
               {product.description}
             </p>
             <p className="mt-6 text-sm text-muted">
-              Pilih paket, ukuran (S–XXXL), opsi oversize, kerah (untuk jersey), dan
-              add-on — lalu kirim ringkasan ke WhatsApp untuk konfirmasi admin. Harga
-              dasar per paket & ukuran tersinkron dari Medusa; kerah, oversize, dan
-              add-on dihitung di bawah seperti pricelist workshop.
+              Hybrid: pilih konfigurasi di bawah — checkout di situs (pesanan masuk Medusa Admin)
+              atau WhatsApp bila ingin diskusi produk sekaligus. Harga varian web = paket + ukuran;
+              kerah dan add-on tercatat di metadata untuk tim.
             </p>
             <ProductConfigurator
               productName={product.name}

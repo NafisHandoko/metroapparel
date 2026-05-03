@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, useTransition } from "react";
 
+import { addConfiguratorToCartAction } from "@/app/actions/metro-cart";
 import { Button } from "@/components/ui/button";
 import {
   additionalOptions,
@@ -29,6 +31,14 @@ export function ProductConfigurator({
   productHandle,
   kind,
 }: ProductConfiguratorProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [cartError, setCartError] = useState<string | null>(null);
+
+  const checkoutEnabled =
+    typeof process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY === "string" &&
+    process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY.length > 0;
+
   const tiers = tiersForKind(kind);
   const [tierId, setTierId] = useState(tiers[0]?.id ?? "");
   const [collarId, setCollarId] = useState(collarOptions[0]?.id ?? "o-neck");
@@ -112,6 +122,51 @@ export function ProductConfigurator({
   ]);
 
   const waHref = getWhatsAppLink(waMessage);
+
+  function buildLineMetadata(): Record<string, string> {
+    const addonIds = additionalOptions
+      .filter(
+        (o) =>
+          !o.group &&
+          o.input !== "quantity" &&
+          addOns[o.id] &&
+          !(o.id === "3d-logo" && ultimateIncludes3d),
+      )
+      .map((o) => o.id);
+    return {
+      product_name: productName,
+      product_handle: productHandle,
+      tier_id: tierId,
+      tier_name: tier?.name ?? "",
+      size,
+      oversize: oversize ? "yes" : "no",
+      collar_id: showCollarPicker(kind) ? collarId : "",
+      collar_label: showCollarPicker(kind) ? (collar?.label ?? "") : "",
+      fabric_extra: fabricExtra ?? "",
+      up_size_qty: String(upSizeQty),
+      addons_json: JSON.stringify(addonIds),
+      estimated_total_idr: String(total),
+    };
+  }
+
+  function addToWebsiteCart() {
+    if (!tier) return;
+    setCartError(null);
+    startTransition(async () => {
+      const res = await addConfiguratorToCartAction({
+        productHandle,
+        tierId,
+        size,
+        metadata: buildLineMetadata(),
+      });
+      if (res.ok) {
+        router.push("/cart");
+        router.refresh();
+        return;
+      }
+      setCartError(res.message);
+    });
+  }
 
   return (
     <div className="mt-10 space-y-10 border-t border-white/10 pt-10">
@@ -347,13 +402,33 @@ export function ProductConfigurator({
         </p>
         <p className="mt-2 font-display text-3xl text-foreground">{formatIdr(total)}</p>
         <p className="mt-2 text-xs text-muted">
-          Belum termasuk ongkir & diskon qty. Final setelah chat admin.
+          Belum termasuk ongkir & diskon qty. Checkout web memakai harga varian Medusa (paket +
+          ukuran); kerah & add-on ikut di metadata untuk admin. Final bisa lewat chat.
         </p>
-        <Button asChild size="xl" className="mt-6 w-full sm:w-auto">
-          <a href={waHref} target="_blank" rel="noreferrer">
-            Kirim ringkasan ke WhatsApp
-          </a>
-        </Button>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Button asChild size="xl" className="w-full sm:w-auto">
+            <a href={waHref} target="_blank" rel="noreferrer">
+              Kirim ringkasan ke WhatsApp
+            </a>
+          </Button>
+          {checkoutEnabled ? (
+            <Button
+              type="button"
+              size="xl"
+              variant="outline"
+              className="w-full border-white/25 bg-background/60 sm:w-auto"
+              disabled={!tier || isPending}
+              onClick={addToWebsiteCart}
+            >
+              {isPending ? "Menambahkan…" : "Tambah ke keranjang (checkout)"}
+            </Button>
+          ) : null}
+        </div>
+        {cartError ? (
+          <p className="mt-3 text-xs text-red-400" role="alert">
+            {cartError}
+          </p>
+        ) : null}
       </div>
     </div>
   );

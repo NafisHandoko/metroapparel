@@ -8,6 +8,7 @@ import { site } from "@/lib/data/site";
 const nav = [
   { href: "/#categories", label: "Kategori" },
   { href: "/products", label: "Produk" },
+  { href: "/cart", label: "Keranjang" },
   { href: "/#why", label: "Keunggulan" },
   { href: "/#faq", label: "FAQ" },
 ];
