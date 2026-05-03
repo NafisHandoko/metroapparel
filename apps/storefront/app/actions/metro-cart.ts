@@ -12,6 +12,7 @@ export async function addConfiguratorToCartAction(input: {
 }): Promise<{ ok: true } | { ok: false; message: string }> {
   const result = await addVariantToMetroCart(input);
   if (result.ok) {
+    revalidatePath("/", "layout");
     revalidatePath("/cart");
     revalidatePath(`/products/${input.productHandle}`);
   }
@@ -23,6 +24,7 @@ export async function removeCartLineAction(
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   try {
     await removeMetroLineItem(lineId);
+    revalidatePath("/", "layout");
     revalidatePath("/cart");
     return { ok: true };
   } catch (e) {

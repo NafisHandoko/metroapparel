@@ -1,26 +1,53 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ShoppingCart } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { getWhatsAppLink } from "@/lib/whatsapp";
 import { site } from "@/lib/data/site";
+import { retrieveMetroCart } from "@/lib/medusa/cart-server";
+import { getWhatsAppLink } from "@/lib/whatsapp";
 
 const nav = [
   { href: "/#categories", label: "Kategori" },
   { href: "/products", label: "Produk" },
-  { href: "/cart", label: "Keranjang" },
   { href: "/#why", label: "Keunggulan" },
   { href: "/#faq", label: "FAQ" },
 ];
 
-export function SiteHeader() {
+function CartHeaderLink({ itemCount }: { itemCount: number }) {
+  const label =
+    itemCount > 0
+      ? `Keranjang, ${itemCount} produk`
+      : "Keranjang";
+
+  return (
+    <Link
+      href="/cart"
+      className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-white/15 text-foreground transition-colors hover:border-brand/50 hover:bg-white/5"
+      aria-label={label}
+    >
+      <ShoppingCart className="h-5 w-5" strokeWidth={2} aria-hidden />
+      {itemCount > 0 ? (
+        <span className="absolute -right-1 -top-1 flex min-h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold tabular-nums leading-none text-background">
+          {itemCount > 99 ? "99+" : itemCount}
+        </span>
+      ) : null}
+    </Link>
+  );
+}
+
+export async function SiteHeader() {
+  const cart = await retrieveMetroCart();
+  const itemCount =
+    cart?.items?.reduce((sum, line) => sum + (line.quantity ?? 0), 0) ?? 0;
+
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Link href="/" className="relative block h-9 w-36 shrink-0 sm:h-10 sm:w-44">
           <Image
             src="/logo-with-text.png"
-            alt={`${site.name} — beranda`}
+            alt={`${site.name} - beranda`}
             fill
             className="object-contain object-left"
             sizes="(max-width: 640px) 144px, 176px"
@@ -39,6 +66,7 @@ export function SiteHeader() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
+          <CartHeaderLink itemCount={itemCount} />
           <Button asChild size="sm" className="hidden sm:inline-flex">
             <a
               href={getWhatsAppLink(
