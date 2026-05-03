@@ -8,6 +8,22 @@ export type ProductKind =
   | "short-pants"
   | "polo";
 
+const PRODUCT_KIND_VALUES: ProductKind[] = [
+  "jersey-top",
+  "jersey-set",
+  "training-pants",
+  "jacket",
+  "short-pants",
+  "polo",
+];
+
+export function parseProductKind(value: unknown): ProductKind | null {
+  if (typeof value !== "string") return null;
+  return PRODUCT_KIND_VALUES.includes(value as ProductKind)
+    ? (value as ProductKind)
+    : null;
+}
+
 export type PricelistTier = {
   id: string;
   name: string;

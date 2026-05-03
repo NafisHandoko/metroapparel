@@ -2,11 +2,12 @@ import Link from "next/link";
 
 import { ProductCard } from "@/components/product/product-card";
 import { Button } from "@/components/ui/button";
-import { products } from "@/lib/data/site";
+import { listMetroProducts } from "@/lib/medusa/products";
 
-const featured = products.slice(0, 6);
+export async function FeaturedProductsSection() {
+  const products = await listMetroProducts();
+  const featured = products.slice(0, 6);
 
-export function FeaturedProductsSection() {
   return (
     <section id="featured" className="scroll-mt-24 py-20 sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -27,9 +28,16 @@ export function FeaturedProductsSection() {
           </Button>
         </div>
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {featured.map((product) => (
-            <ProductCard key={product.handle} product={product} />
-          ))}
+          {featured.length === 0 ? (
+            <p className="col-span-full text-sm text-muted">
+              Hubungkan storefront ke Medusa (publishable key + backend) untuk menampilkan
+              produk unggulan di sini.
+            </p>
+          ) : (
+            featured.map((product) => (
+              <ProductCard key={product.handle} product={product} />
+            ))
+          )}
         </div>
       </div>
     </section>

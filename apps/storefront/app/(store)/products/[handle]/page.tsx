@@ -5,28 +5,30 @@ import { notFound } from "next/navigation";
 import { ProductConfigurator } from "@/components/product/product-configurator";
 import { Badge } from "@/components/ui/badge";
 import { formatIdr, minPriceForKind, tiersForKind } from "@/lib/data/catalog";
-import { getProductByHandle, products, site } from "@/lib/data/site";
+import { site } from "@/lib/data/site";
+import {
+  getMetroProductByHandle,
+  getMetroProductSummaryByHandle,
+} from "@/lib/medusa/products";
 import type { Metadata } from "next";
+
+export const dynamic = "force-dynamic";
 
 type PageProps = { params: Promise<{ handle: string }> };
 
-export function generateStaticParams() {
-  return products.map((p) => ({ handle: p.handle }));
-}
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { handle } = await params;
-  const product = getProductByHandle(handle);
-  if (!product) return { title: "Produk" };
+  const raw = await getMetroProductByHandle(handle);
+  if (!raw) return { title: "Produk" };
   return {
-    title: `${product.name} — ${site.name}`,
-    description: product.description,
+    title: `${raw.title} — ${site.name}`,
+    description: raw.description ?? raw.title,
   };
 }
 
 export default async function ProductDetailPage({ params }: PageProps) {
   const { handle } = await params;
-  const product = getProductByHandle(handle);
+  const product = await getMetroProductSummaryByHandle(handle);
   if (!product) notFound();
 
   const tierCount = tiersForKind(product.kind).length;
@@ -67,7 +69,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </p>
             <p className="mt-6 text-sm text-muted">
               Pilih paket, ukuran (S–XXXL), opsi oversize, kerah (untuk jersey), dan
-              add-on — lalu kirim ringkasan ke WhatsApp untuk konfirmasi admin.
+              add-on — lalu kirim ringkasan ke WhatsApp untuk konfirmasi admin. Harga
+              dasar per paket & ukuran tersinkron dari Medusa; kerah, oversize, dan
+              add-on dihitung di bawah seperti pricelist workshop.
             </p>
             <ProductConfigurator
               productName={product.name}

@@ -90,77 +90,12 @@ export type Product = {
   handle: string;
   name: string;
   category: string;
+  /** Medusa category handle — matches `?category=` di halaman katalog */
+  categorySlug?: string;
   image: string;
   description: string;
   kind: ProductKind;
 };
-
-export function getProductByHandle(handle: string): Product | undefined {
-  return products.find((p) => p.handle === handle);
-}
-
-export const products: Product[] = [
-  {
-    handle: "jersey-atasan",
-    name: "Jersey Atasan",
-    category: "Jersey Atasan",
-    kind: "jersey-top",
-    image:
-      "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=900&q=80",
-    description:
-      "Produk utama: jersey bagian atas dengan tiga paket — Essential, Elite, dan Prime. Pilih kerah, ukuran, oversize, dan add-on; ringkasan bisa langsung dikirim ke WhatsApp.",
-  },
-  {
-    handle: "jersey-satu-set",
-    name: "Jersey Satu Set",
-    category: "Jersey Satu Set",
-    kind: "jersey-set",
-    image:
-      "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=900&q=80",
-    description:
-      "Set lengkap atasan + celana: Regular (Basic), Standard (paling populer), Premium, dan Ultimate. Cocok untuk match day, liga, dan tim esports.",
-  },
-  {
-    handle: "training-pants",
-    name: "Training Pants",
-    category: "Training Pants",
-    kind: "training-pants",
-    image:
-      "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=900&q=80",
-    description:
-      "Celana training bahan Lotto: opsi full printing atau non printing. Pilih ukuran & add-on di bawah.",
-  },
-  {
-    handle: "jaket",
-    name: "Jaket",
-    category: "Jaket",
-    kind: "jacket",
-    image:
-      "https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=900&q=80",
-    description:
-      "Jaket bahan Lotto: varian printing atau non printing + bordir. Pilih paket, ukuran, dan opsi tambahan.",
-  },
-  {
-    handle: "short-pants",
-    name: "Short Pants",
-    category: "Short Pants",
-    kind: "short-pants",
-    image:
-      "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=900&q=80",
-    description:
-      "Celana pendek Lotto: full printing atau print samping.",
-  },
-  {
-    handle: "polo",
-    name: "Polo",
-    category: "Polo",
-    kind: "polo",
-    image:
-      "https://images.unsplash.com/photo-1622445275571-3f7462c0068c?w=900&q=80",
-    description:
-      "Polo bordir material CVC 24S — untuk corporate, sekolah, dan komunitas.",
-  },
-];
 
 export const galleryImages = [
   "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&q=80",

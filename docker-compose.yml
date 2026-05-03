@@ -33,8 +33,10 @@ services:
     container_name: medusa_backend
     restart: unless-stopped
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
     ports:
       - "9000:9000"
       - "5173:5173"
@@ -48,6 +50,16 @@ services:
       - .:/server
       - /server/node_modules
       - /server/apps/backend/node_modules
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"require('http').get('http://127.0.0.1:9000/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\"",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
     networks:
       - medusa_network
 
@@ -58,11 +70,13 @@ services:
     container_name: medusa_storefront
     restart: unless-stopped
     depends_on:
-      - medusa
+      medusa:
+        condition: service_healthy
     ports:
       - "8000:8000"
     environment:
-      - NEXT_PUBLIC_MEDUSA_BACKEND_URL=http://medusa:9000
+      # Server-side fetch dari container Next ke container Medusa (bukan untuk browser).
+      - MEDUSA_BACKEND_INTERNAL_URL=http://medusa:9000
     env_file:
       - apps/storefront/.env
     volumes:
