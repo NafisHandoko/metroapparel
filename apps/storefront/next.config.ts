@@ -1,4 +1,7 @@
 import type { NextConfig } from "next";
+// const checkEnvVariables = require("./check-env-variables");
+
+// checkEnvVariables();
 
 const nextConfig: NextConfig = {
   images: {
