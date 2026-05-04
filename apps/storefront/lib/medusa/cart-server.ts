@@ -1,12 +1,16 @@
 import type { HttpTypes } from "@medusajs/types";
 
-import { getCartId, setCartId } from "@/lib/cart/cart-cookie";
+import { getCartId, removeCartId, setCartId } from "@/lib/cart/cart-cookie";
 import { sdk } from "@/lib/medusa/config";
 import { defaultCountryCode, getRegion } from "@/lib/medusa/regions";
 import { metroVariantSku } from "@/lib/medusa/sku";
 
-const CART_FIELDS =
-  "*items,*items.variant,*items.product,*items.metadata,*region,+items.total,*shipping_methods,*shipping_address,*billing_address,*email,*payment_collection.payment_sessions";
+/**
+ * Hanya modifier `+` di atas default Medusa. Daftar `*items,...,*region,...` memicu
+ * `shouldReplaceDefaults` + strip prefix yang tidak menghapus `*`, sehingga token
+ * seperti `*region` bisa lolos ke ORM (`Entity 'Cart' does not have property '*region'`).
+ */
+export const metroCartRetrieveFields = "+items.subtotal,+items.total";
 
 export async function retrieveMetroCart(): Promise<HttpTypes.StoreCart | null> {
   if (!process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) return null;
@@ -14,7 +18,7 @@ export async function retrieveMetroCart(): Promise<HttpTypes.StoreCart | null> {
   if (!id) return null;
   try {
     const { cart } = await sdk.store.cart.retrieve(id, {
-      fields: CART_FIELDS,
+      fields: metroCartRetrieveFields,
     });
     return cart ?? null;
   } catch {
@@ -37,17 +41,19 @@ export async function ensureMetroCart(): Promise<HttpTypes.StoreCart | null> {
         if (cart.region_id !== region.id) {
           await sdk.store.cart.update(cartId, { region_id: region.id });
         }
-        return (await sdk.store.cart.retrieve(cartId, { fields: CART_FIELDS }))
-          .cart;
+        return (await sdk.store.cart.retrieve(cartId, {
+          fields: metroCartRetrieveFields,
+        })).cart;
       }
     } catch {
+      await removeCartId();
       cartId = undefined;
     }
   }
 
   const { cart } = await sdk.store.cart.create(
     { region_id: region.id },
-    { fields: CART_FIELDS },
+    { fields: metroCartRetrieveFields },
     {},
   );
   await setCartId(cart.id);
@@ -98,16 +104,34 @@ export async function addVariantToMetroCart(input: {
     return { ok: false, message: "Tidak bisa membuat keranjang." };
   }
 
-  await sdk.store.cart.createLineItem(
-    cart.id,
-    {
-      variant_id: variant.id,
-      quantity: 1,
-      metadata: input.metadata,
-    },
-    { fields: CART_FIELDS },
-    {},
-  );
+  try {
+    await sdk.client.fetch<{ cart: HttpTypes.StoreCart }>(
+      `/store/carts/${cart.id}/metro-line`,
+      {
+        method: "POST",
+        body: {
+          variant_id: variant.id,
+          quantity: 1,
+          metadata: input.metadata,
+        },
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+  } catch (e: unknown) {
+    const msg =
+      typeof e === "object" &&
+      e !== null &&
+      "message" in e &&
+      typeof (e as { message: unknown }).message === "string"
+        ? (e as { message: string }).message
+        : String(e);
+    return {
+      ok: false,
+      message: msg || "Gagal menambahkan ke keranjang (Metro line).",
+    };
+  }
 
   return { ok: true };
 }
@@ -115,5 +139,10 @@ export async function addVariantToMetroCart(input: {
 export async function removeMetroLineItem(lineId: string): Promise<void> {
   const cartId = await getCartId();
   if (!cartId) return;
-  await sdk.store.cart.deleteLineItem(cartId, lineId, { fields: CART_FIELDS }, {});
+  await sdk.store.cart.deleteLineItem(
+    cartId,
+    lineId,
+    { fields: metroCartRetrieveFields },
+    {},
+  );
 }

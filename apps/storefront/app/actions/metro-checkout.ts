@@ -4,10 +4,7 @@ import type { HttpTypes } from "@medusajs/types";
 
 import { removeCartId } from "@/lib/cart/cart-cookie";
 import { sdk } from "@/lib/medusa/config";
-import { retrieveMetroCart } from "@/lib/medusa/cart-server";
-
-const CART_FIELDS =
-  "*items,*items.variant,*items.product,*items.metadata,*region,+items.total,*shipping_methods,*shipping_address,*billing_address,*email,*payment_collection.payment_sessions";
+import { metroCartRetrieveFields, retrieveMetroCart } from "@/lib/medusa/cart-server";
 
 function errMsg(e: unknown): string {
   if (e instanceof Error) return e.message;
@@ -71,7 +68,7 @@ export async function previewMetroShippingOptions(
           country_code: country,
         },
       },
-      { fields: CART_FIELDS },
+      { fields: metroCartRetrieveFields },
       {},
     );
 
@@ -152,7 +149,7 @@ export async function prepareMetroCheckout(
           country_code: country,
         },
       },
-      { fields: CART_FIELDS },
+      { fields: metroCartRetrieveFields },
       {},
     );
 
@@ -185,11 +182,11 @@ export async function prepareMetroCheckout(
     await sdk.store.cart.addShippingMethod(
       cart.id,
       { option_id: chosenId },
-      { fields: CART_FIELDS },
+      { fields: metroCartRetrieveFields },
       {},
     );
 
-    const refreshed = (await sdk.store.cart.retrieve(cart.id, { fields: CART_FIELDS }))
+    const refreshed = (await sdk.store.cart.retrieve(cart.id, { fields: metroCartRetrieveFields }))
       .cart;
 
     if (!refreshed?.shipping_methods?.length) {

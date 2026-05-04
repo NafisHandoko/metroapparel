@@ -1,4 +1,6 @@
 import { MedusaContainer } from "@medusajs/framework";
+
+import { metroAddonCatalogSeedJson } from "../metro/metro-pricing";
 import {
   ContainerRegistrationKeys,
   ModuleRegistrationName,
@@ -776,6 +778,8 @@ export default async function initial_data_seed({
         category_ids: [categoryId],
         metadata: {
           metro_kind: p.metro_kind,
+          /** JSON daftar add-on; admin bisa edit di Product metadata. */
+          metro_addon_catalog: metroAddonCatalogSeedJson(),
         },
         images: p.imageUrls.map((url) => ({ url })),
         options: [

@@ -1,4 +1,10 @@
-/** Harga dalam Rupiah (IDR). */
+/**
+ * Harga Metro (IDR) - harus selaras dengan `apps/storefront/lib/data/catalog.ts`
+ * dan logika `ProductConfigurator` (total + metadata).
+ *
+ * Admin dapat override daftar add-on per produk lewat metadata `metro_addon_catalog`
+ * (JSON array of { id, label, price, description?, input?, group? }).
+ */
 
 export type ProductKind =
   | "jersey-top"
@@ -182,7 +188,6 @@ export const poloTiers: PricelistTier[] = [
 export type CollarOption = {
   id: string;
   label: string;
-  /** Tambahan harga kerah (bisa 0). */
   surcharge: number;
 };
 
@@ -204,9 +209,6 @@ export const collarOptions: CollarOption[] = [
   { id: "polo-x-v-tutup", label: "Polo x V tutup", surcharge: 10_000 },
 ];
 
-export const sizeOptions = ["S", "M", "L", "XL", "XXL", "XXXL"] as const;
-export type SizeOption = (typeof sizeOptions)[number];
-
 export const oversizeSurcharge = 15_000;
 
 export type AdditionalOption = {
@@ -214,13 +216,12 @@ export type AdditionalOption = {
   label: string;
   description?: string;
   price: number;
-  /** Untuk up size: jumlah kelipatan. */
   input?: "quantity";
-  /** Hanya satu dari grup (mis. emboss vs jacquard). */
   group?: "fabric-extra";
 };
 
-export const additionalOptions: AdditionalOption[] = [
+/** Default add-on bila produk tidak punya `metro_addon_catalog` di metadata. */
+export const defaultAdditionalOptions: AdditionalOption[] = [
   { id: "3d-logo", label: "3D logo", price: 20_000 },
   {
     id: "up-size",
@@ -264,15 +265,6 @@ export const additionalOptions: AdditionalOption[] = [
   { id: "raglan", label: "Raglan", price: 10_000 },
 ];
 
-export function formatIdr(value: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
 export function tiersForKind(kind: ProductKind): PricelistTier[] {
   switch (kind) {
     case "jersey-top":
@@ -292,12 +284,128 @@ export function tiersForKind(kind: ProductKind): PricelistTier[] {
   }
 }
 
-export function minPriceForKind(kind: ProductKind): number {
-  const tiers = tiersForKind(kind);
-  if (!tiers.length) return 0;
-  return Math.min(...tiers.map((t) => t.price));
-}
-
 export function showCollarPicker(kind: ProductKind): boolean {
   return kind === "jersey-top" || kind === "jersey-set";
+}
+
+export type MetroPriceLine = { label: string; amount: number };
+
+/**
+ * Parse `product.metadata.metro_addon_catalog` (JSON string).
+ * Mengembalikan null jika tidak ada / invalid - caller pakai `defaultAdditionalOptions`.
+ */
+export function parseAddonCatalogFromProductMetadata(
+  productMetadata: Record<string, unknown> | null | undefined,
+): AdditionalOption[] | null {
+  const raw = productMetadata?.metro_addon_catalog;
+  if (raw == null || raw === "") return null;
+  if (typeof raw !== "string") return null;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return null;
+    const out: AdditionalOption[] = [];
+    for (const row of parsed) {
+      if (!row || typeof row !== "object") continue;
+      const r = row as Record<string, unknown>;
+      if (typeof r.id !== "string" || typeof r.label !== "string") continue;
+      if (typeof r.price !== "number" || Number.isNaN(r.price)) continue;
+      out.push({
+        id: r.id,
+        label: r.label,
+        description:
+          typeof r.description === "string" ? r.description : undefined,
+        price: r.price,
+        input: r.input === "quantity" ? "quantity" : undefined,
+        group: r.group === "fabric-extra" ? "fabric-extra" : undefined,
+      });
+    }
+    return out.length ? out : null;
+  } catch {
+    return null;
+  }
+}
+
+export function metroAddonCatalogSeedJson(): string {
+  return JSON.stringify(defaultAdditionalOptions);
+}
+
+/**
+ * Hitung total & rincian dari metadata baris (sama logika dengan storefront configurator).
+ */
+export function computeMetroLineFromMetadata(
+  kind: ProductKind,
+  metadata: Record<string, string>,
+  addonCatalog: AdditionalOption[],
+): { total: number; breakdown: MetroPriceLine[] } {
+  const breakdown: MetroPriceLine[] = [];
+  const tierId = metadata.tier_id ?? "";
+  const tiers = tiersForKind(kind);
+  const tier = tiers.find((t) => t.id === tierId);
+  if (!tier) {
+    return { total: 0, breakdown: [{ label: "Paket tidak dikenal", amount: 0 }] };
+  }
+
+  breakdown.push({ label: `Paket (${tier.name})`, amount: tier.price });
+  let sum = tier.price;
+
+  const collarId = metadata.collar_id ?? "";
+  if (showCollarPicker(kind)) {
+    const collarExtra =
+      collarOptions.find((c) => c.id === collarId)?.surcharge ?? 0;
+    if (collarExtra) {
+      const label =
+        collarOptions.find((c) => c.id === collarId)?.label ?? "Kerah";
+      breakdown.push({ label: `Kerah (${label})`, amount: collarExtra });
+      sum += collarExtra;
+    }
+  }
+
+  if (metadata.oversize === "yes") {
+    breakdown.push({ label: "Oversize", amount: oversizeSurcharge });
+    sum += oversizeSurcharge;
+  }
+
+  const upSizeQty = Math.max(
+    0,
+    parseInt(metadata.up_size_qty ?? "0", 10) || 0,
+  );
+  const upExtra = upSizeQty * 10_000;
+  if (upExtra) {
+    breakdown.push({ label: `Up size (x${upSizeQty})`, amount: upExtra });
+    sum += upExtra;
+  }
+
+  const fabric = metadata.fabric_extra ?? "";
+  if (fabric === "emboss") {
+    breakdown.push({ label: "Kain emboss", amount: 10_000 });
+    sum += 10_000;
+  } else if (fabric === "jacquard") {
+    breakdown.push({ label: "Kain jacquard", amount: 15_000 });
+    sum += 15_000;
+  }
+
+  const ultimateIncludes3d = kind === "jersey-set" && tierId === "ultimate";
+
+  let addonIds: string[] = [];
+  try {
+    const parsed = JSON.parse(metadata.addons_json || "[]") as unknown;
+    addonIds = Array.isArray(parsed)
+      ? parsed.filter((x): x is string => typeof x === "string")
+      : [];
+  } catch {
+    addonIds = [];
+  }
+  const selected = new Set(addonIds);
+
+  for (const opt of addonCatalog) {
+    if (opt.group === "fabric-extra") continue;
+    if (opt.input === "quantity") continue;
+    if (opt.id === "3d-logo" && ultimateIncludes3d) continue;
+    if (selected.has(opt.id)) {
+      breakdown.push({ label: opt.label, amount: opt.price });
+      sum += opt.price;
+    }
+  }
+
+  return { total: sum, breakdown };
 }
