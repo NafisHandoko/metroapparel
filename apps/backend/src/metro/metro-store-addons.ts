@@ -6,8 +6,13 @@ import {
   parseMetroAddonRulesPayload,
   rulesToAdditionalOptionsForProduct,
 } from "./metro-addon-rules";
-import type { AdditionalOption } from "./metro-pricing";
-import { defaultAdditionalOptions } from "./metro-pricing";
+import {
+  METRO_COLLAR_RULES_METADATA_KEY,
+  parseMetroCollarRulesPayload,
+  rulesToCollarOptionsForProduct,
+} from "./metro-collar-rules";
+import type { AdditionalOption, CollarOption } from "./metro-pricing";
+import { defaultAdditionalOptions, defaultCollarOptions } from "./metro-pricing";
 
 /** Samakan dengan nama store di seed (`initial-data-seed`). */
 const METRO_STORE_NAME = "Metro Apparel";
@@ -65,4 +70,19 @@ export async function getResolvedAddonCatalogForProduct(
     parsed.entries,
   );
   return filtered.length ? filtered : defaultAdditionalOptions;
+}
+
+/** Daftar kerah untuk produk: aturan toko + scope, else default kode. */
+export async function getResolvedCollarCatalogForProduct(
+  container: MedusaContainer,
+  productId: string,
+): Promise<CollarOption[]> {
+  const metadata = await getPrimaryStoreMetadata(container);
+  const raw = metadata?.[METRO_COLLAR_RULES_METADATA_KEY];
+  const parsed = parseMetroCollarRulesPayload(raw);
+  if (!parsed?.entries.length) {
+    return defaultCollarOptions;
+  }
+  const filtered = rulesToCollarOptionsForProduct(productId, parsed.entries);
+  return filtered.length ? filtered : defaultCollarOptions;
 }

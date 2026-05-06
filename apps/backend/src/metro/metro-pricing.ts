@@ -191,7 +191,8 @@ export type CollarOption = {
   surcharge: number;
 };
 
-export const collarOptions: CollarOption[] = [
+/** Default kerah — diganti oleh metadata toko `metro_collar_rules` (Admin → Metro collars). */
+export const defaultCollarOptions: CollarOption[] = [
   { id: "o-neck", label: "O-neck", surcharge: 0 },
   { id: "o-neck-2", label: "O-neck 2.0", surcharge: 0 },
   { id: "o-neck-3", label: "O-neck 3.0", surcharge: 5_000 },
@@ -332,6 +333,7 @@ export function computeMetroLineFromMetadata(
   kind: ProductKind,
   metadata: Record<string, string>,
   addonCatalog: AdditionalOption[],
+  collarCatalog: CollarOption[],
 ): { total: number; breakdown: MetroPriceLine[] } {
   const breakdown: MetroPriceLine[] = [];
   const tierId = metadata.tier_id ?? "";
@@ -347,10 +349,10 @@ export function computeMetroLineFromMetadata(
   const collarId = metadata.collar_id ?? "";
   if (showCollarPicker(kind)) {
     const collarExtra =
-      collarOptions.find((c) => c.id === collarId)?.surcharge ?? 0;
+      collarCatalog.find((c) => c.id === collarId)?.surcharge ?? 0;
     if (collarExtra) {
       const label =
-        collarOptions.find((c) => c.id === collarId)?.label ?? "Kerah";
+        collarCatalog.find((c) => c.id === collarId)?.label ?? "Kerah";
       breakdown.push({ label: `Kerah (${label})`, amount: collarExtra });
       sum += collarExtra;
     }

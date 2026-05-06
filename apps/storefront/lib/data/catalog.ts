@@ -186,6 +186,7 @@ export type CollarOption = {
   surcharge: number;
 };
 
+/** Fallback jika API kerah gagal; sumber utama = Admin → Settings → Metro collars. */
 export const collarOptions: CollarOption[] = [
   { id: "o-neck", label: "O-neck", surcharge: 0 },
   { id: "o-neck-2", label: "O-neck 2.0", surcharge: 0 },

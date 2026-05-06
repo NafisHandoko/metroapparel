@@ -6,13 +6,13 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { addConfiguratorToCartAction } from "@/app/actions/metro-cart";
 import { Button } from "@/components/ui/button";
 import {
-  collarOptions,
   formatIdr,
   oversizeSurcharge,
   showCollarPicker,
   sizeOptions,
   tiersForKind,
   type AdditionalOption,
+  type CollarOption,
   type ProductKind,
   type SizeOption,
 } from "@/lib/data/catalog";
@@ -26,6 +26,8 @@ type ProductConfiguratorProps = {
   kind: ProductKind;
   /** Dari Medusa (pengaturan global + filter produk di Admin). */
   addonOptions: AdditionalOption[];
+  /** Dari Medusa — Settings → Metro collars. */
+  collarOptions: CollarOption[];
 };
 
 export function ProductConfigurator({
@@ -33,6 +35,7 @@ export function ProductConfigurator({
   productHandle,
   kind,
   addonOptions,
+  collarOptions,
 }: ProductConfiguratorProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -44,7 +47,9 @@ export function ProductConfigurator({
 
   const tiers = tiersForKind(kind);
   const [tierId, setTierId] = useState(tiers[0]?.id ?? "");
-  const [collarId, setCollarId] = useState(collarOptions[0]?.id ?? "o-neck");
+  const [collarId, setCollarId] = useState(
+    () => collarOptions[0]?.id ?? "o-neck",
+  );
   const [size, setSize] = useState<SizeOption>("M");
   const [oversize, setOversize] = useState(false);
   const [addOns, setAddOns] = useState<Record<string, boolean>>({});
@@ -72,6 +77,14 @@ export function ProductConfigurator({
       setAddOns((prev) => ({ ...prev, "3d-logo": false }));
     }
   }, [ultimateIncludes3d]);
+
+  useEffect(() => {
+    setCollarId((prev) =>
+      collarOptions.some((c) => c.id === prev)
+        ? prev
+        : (collarOptions[0]?.id ?? "o-neck"),
+    );
+  }, [collarOptions]);
 
   const tier = tiers.find((t) => t.id === tierId);
   const collar = collarOptions.find((c) => c.id === collarId);

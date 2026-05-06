@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatIdr, minPriceForKind, tiersForKind } from "@/lib/data/catalog";
 import { site } from "@/lib/data/site";
 import { getMetroAddonOptionsForProduct } from "@/lib/medusa/metro-addon-catalog";
+import { getMetroCollarOptionsForProduct } from "@/lib/medusa/metro-collar-catalog";
 import {
   getMetroProductByHandle,
   getMetroProductSummaryByHandle,
@@ -32,9 +33,10 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const product = await getMetroProductSummaryByHandle(handle);
   if (!product) notFound();
 
-  const addonOptions = await getMetroAddonOptionsForProduct(
-    product.medusaProductId,
-  );
+  const [addonOptions, collarOptions] = await Promise.all([
+    getMetroAddonOptionsForProduct(product.medusaProductId),
+    getMetroCollarOptionsForProduct(product.medusaProductId),
+  ]);
 
   const tierCount = tiersForKind(product.kind).length;
   const priceHint =
@@ -82,6 +84,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
               productHandle={product.handle}
               kind={product.kind}
               addonOptions={addonOptions}
+              collarOptions={collarOptions}
             />
             <div className="mt-8">
               <Link

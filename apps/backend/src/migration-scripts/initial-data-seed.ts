@@ -27,6 +27,11 @@ import {
   defaultMetroAddonRulesPayload,
   serializeMetroAddonRulesPayload,
 } from "../metro/metro-addon-rules";
+import {
+  METRO_COLLAR_RULES_METADATA_KEY,
+  defaultMetroCollarRulesPayload,
+  serializeMetroCollarRulesPayload,
+} from "../metro/metro-collar-rules";
 
 const COUNTRY_ID = "id";
 
@@ -374,24 +379,36 @@ export default async function initial_data_seed({
       name?: string;
     }[]
   ).find((s) => s.name === METRO_STORE_NAME) ?? allStoresForAddons?.[0];
-  if (
+  const needsAddonRules =
     metroStoreRow?.id &&
-    metroStoreRow.metadata?.[METRO_ADDON_RULES_METADATA_KEY] == null
-  ) {
+    metroStoreRow.metadata?.[METRO_ADDON_RULES_METADATA_KEY] == null;
+  const needsCollarRules =
+    metroStoreRow?.id &&
+    metroStoreRow.metadata?.[METRO_COLLAR_RULES_METADATA_KEY] == null;
+  if (needsAddonRules || needsCollarRules) {
+    const base = { ...(metroStoreRow!.metadata ?? {}) };
+    if (needsAddonRules) {
+      base[METRO_ADDON_RULES_METADATA_KEY] = serializeMetroAddonRulesPayload(
+        defaultMetroAddonRulesPayload(),
+      );
+    }
+    if (needsCollarRules) {
+      base[METRO_COLLAR_RULES_METADATA_KEY] = serializeMetroCollarRulesPayload(
+        defaultMetroCollarRulesPayload(),
+      );
+    }
     await updateStoresWorkflow(container).run({
       input: {
-        selector: { id: metroStoreRow.id },
-        update: {
-          metadata: {
-            ...(metroStoreRow.metadata ?? {}),
-            [METRO_ADDON_RULES_METADATA_KEY]: serializeMetroAddonRulesPayload(
-              defaultMetroAddonRulesPayload(),
-            ),
-          },
-        },
+        selector: { id: metroStoreRow!.id },
+        update: { metadata: base },
       },
     });
-    logger.info("Metadata add-on global (metro_addon_rules) diset ke default seed.");
+    if (needsAddonRules) {
+      logger.info("Metadata add-on global (metro_addon_rules) diset ke default seed.");
+    }
+    if (needsCollarRules) {
+      logger.info("Metadata kerah global (metro_collar_rules) diset ke default seed.");
+    }
   }
 
   logger.info("Seeding region (Indonesia / IDR)...");

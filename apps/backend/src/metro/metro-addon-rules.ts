@@ -26,18 +26,26 @@ export type MetroAddonRulesPayload = {
   entries: MetroAddonRuleEntry[];
 };
 
-export function entryAppliesToProduct(
-  entry: MetroAddonRuleEntry,
+export function scopeAppliesToProduct(
   productId: string,
+  scope: MetroAddonScopeMode,
+  productIds: string[],
 ): boolean {
-  if (entry.scope === "all") return true;
-  const set = new Set(entry.product_ids.filter(Boolean));
-  if (entry.scope === "only") return set.has(productId);
-  if (entry.scope === "except") {
+  if (scope === "all") return true;
+  const set = new Set(productIds.filter(Boolean));
+  if (scope === "only") return set.has(productId);
+  if (scope === "except") {
     if (set.size === 0) return true;
     return !set.has(productId);
   }
   return true;
+}
+
+export function entryAppliesToProduct(
+  entry: MetroAddonRuleEntry,
+  productId: string,
+): boolean {
+  return scopeAppliesToProduct(productId, entry.scope, entry.product_ids);
 }
 
 export function rulesToAdditionalOptionsForProduct(

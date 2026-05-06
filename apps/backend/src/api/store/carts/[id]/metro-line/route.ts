@@ -14,7 +14,10 @@ import {
   parseProductKind,
 } from "../../../../../metro/metro-pricing";
 import { metroVariantSku } from "../../../../../metro/metro-variant-sku";
-import { getResolvedAddonCatalogForProduct } from "../../../../../metro/metro-store-addons";
+import {
+  getResolvedAddonCatalogForProduct,
+  getResolvedCollarCatalogForProduct,
+} from "../../../../../metro/metro-store-addons";
 
 /** `defaultStoreCartFields` includes `*region.countries`, `*payment_collection`, … for HTTP `FieldParser`. `refetchCart` passes `fields` straight to remote query and must not include those `*` entries. */
 const metroLineRefetchCartFields = defaultStoreCartFields.filter(
@@ -107,11 +110,16 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     req.scope,
     product.id,
   );
+  const collarCatalog = await getResolvedCollarCatalogForProduct(
+    req.scope,
+    product.id,
+  );
 
   const { total, breakdown } = computeMetroLineFromMetadata(
     kind,
     body.metadata,
     addonCatalog,
+    collarCatalog,
   );
   if (total <= 0) {
     throw new MedusaError(

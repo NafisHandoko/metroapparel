@@ -8,5 +8,11 @@ export default defineMiddlewares({
         authenticate("user", ["session", "bearer", "api-key"]),
       ],
     },
+    {
+      matcher: "/admin/metro-collar-catalog",
+      middlewares: [
+        authenticate("user", ["session", "bearer", "api-key"]),
+      ],
+    },
   ],
 });
