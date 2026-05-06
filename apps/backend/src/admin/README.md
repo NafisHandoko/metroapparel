@@ -2,6 +2,8 @@
 
 Metro: **Settings → Metro add-on** (`src/admin/routes/settings/metro-addons/page.tsx`) — add-on global (`GET/POST /admin/metro-addon-catalog`). **Settings → Metro collars** (`settings/metro-collars/page.tsx`) — tipe kerah & surcharge (`GET/POST /admin/metro-collar-catalog`).
 
+**Order:** widget `src/admin/widgets/order-metro-details.tsx` menampilkan kerah, paket, dan rincian harga Metro di atas detail order (`order.details.before`).
+
 You can extend the Medusa Admin to add widgets and new pages. Your customizations interact with API routes to provide merchants with custom functionalities.
 
 > Learn more about Admin Extensions in [this documentation](https://docs.medusajs.com/learn/fundamentals/admin).
