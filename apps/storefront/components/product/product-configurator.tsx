@@ -6,13 +6,13 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { addConfiguratorToCartAction } from "@/app/actions/metro-cart";
 import { Button } from "@/components/ui/button";
 import {
-  additionalOptions,
   collarOptions,
   formatIdr,
   oversizeSurcharge,
   showCollarPicker,
   sizeOptions,
   tiersForKind,
+  type AdditionalOption,
   type ProductKind,
   type SizeOption,
 } from "@/lib/data/catalog";
@@ -24,12 +24,15 @@ type ProductConfiguratorProps = {
   productName: string;
   productHandle: string;
   kind: ProductKind;
+  /** Dari Medusa (pengaturan global + filter produk di Admin). */
+  addonOptions: AdditionalOption[];
 };
 
 export function ProductConfigurator({
   productName,
   productHandle,
   kind,
+  addonOptions,
 }: ProductConfiguratorProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -51,6 +54,19 @@ export function ProductConfigurator({
   );
 
   const ultimateIncludes3d = kind === "jersey-set" && tierId === "ultimate";
+
+  const embossFabric = addonOptions.find(
+    (o) => o.id === "emboss" && o.group === "fabric-extra",
+  );
+  const jacquardFabric = addonOptions.find(
+    (o) => o.id === "jacquard" && o.group === "fabric-extra",
+  );
+  const embossPrice = embossFabric?.price ?? 10_000;
+  const jacquardPrice = jacquardFabric?.price ?? 15_000;
+  const upSizeUnit =
+    addonOptions.find((o) => o.id === "up-size" && o.input === "quantity")
+      ?.price ?? 10_000;
+
   useEffect(() => {
     if (ultimateIncludes3d) {
       setAddOns((prev) => ({ ...prev, "3d-logo": false }));
@@ -64,18 +80,30 @@ export function ProductConfigurator({
     if (!tier) return 0;
     let sum = tier.price + collarExtra;
     if (oversize) sum += oversizeSurcharge;
-    sum += upSizeQty * 10_000;
-    if (fabricExtra === "emboss") sum += 10_000;
-    if (fabricExtra === "jacquard") sum += 15_000;
+    sum += upSizeQty * upSizeUnit;
+    if (fabricExtra === "emboss") sum += embossPrice;
+    if (fabricExtra === "jacquard") sum += jacquardPrice;
 
-    for (const opt of additionalOptions) {
+    for (const opt of addonOptions) {
       if (opt.group === "fabric-extra") continue;
       if (opt.input === "quantity") continue;
       if (opt.id === "3d-logo" && ultimateIncludes3d) continue;
       if (addOns[opt.id]) sum += opt.price;
     }
     return sum;
-  }, [tier, collarExtra, oversize, upSizeQty, fabricExtra, addOns, ultimateIncludes3d]);
+  }, [
+    tier,
+    collarExtra,
+    oversize,
+    upSizeQty,
+    upSizeUnit,
+    fabricExtra,
+    embossPrice,
+    jacquardPrice,
+    addonOptions,
+    addOns,
+    ultimateIncludes3d,
+  ]);
 
   function toggleAddOn(id: string) {
     setAddOns((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -90,10 +118,12 @@ export function ProductConfigurator({
         ? `Kerah: *${collar.label}*${collar.surcharge ? ` (+${formatIdr(collar.surcharge)})` : ""}`
         : "",
       `Ukuran: *${size}*${oversize ? " + *Oversize*" : ""}`,
-      upSizeQty > 0 ? `Up size: *${upSizeQty}* kelipatan (+${formatIdr(upSizeQty * 10_000)})` : "",
+      upSizeQty > 0
+        ? `Up size: *${upSizeQty}* kelipatan (+${formatIdr(upSizeQty * upSizeUnit)})`
+        : "",
       fabricExtra ? `Kain extra: *${fabricExtra}*` : "",
     ];
-    const addLines = additionalOptions
+    const addLines = addonOptions
       .filter(
         (o) =>
           !o.group &&
@@ -119,12 +149,14 @@ export function ProductConfigurator({
     addOns,
     total,
     ultimateIncludes3d,
+    addonOptions,
+    upSizeUnit,
   ]);
 
   const waHref = getWhatsAppLink(waMessage);
 
   function buildLineMetadata(): Record<string, string> {
-    const addonIds = additionalOptions
+    const addonIds = addonOptions
       .filter(
         (o) =>
           !o.group &&
@@ -285,7 +317,7 @@ export function ProductConfigurator({
           Biaya tambahan & opsi
         </h2>
         <div className="mt-4 space-y-3">
-          {additionalOptions.map((opt) => {
+          {addonOptions.map((opt) => {
             if (opt.group === "fabric-extra") return null;
             if (opt.input === "quantity") {
               return (
@@ -296,7 +328,7 @@ export function ProductConfigurator({
                   <div>
                     <p className="text-sm font-medium text-foreground">{opt.label}</p>
                     <p className="text-xs text-muted">
-                      +{formatIdr(opt.price)} per kelipatan
+                      +{formatIdr(upSizeUnit)} per kelipatan
                     </p>
                   </div>
                   <input
@@ -377,7 +409,7 @@ export function ProductConfigurator({
                     : "border-white/15 text-muted hover:text-foreground",
                 )}
               >
-                Emboss (+{formatIdr(10_000)})
+                Emboss (+{formatIdr(embossPrice)})
               </button>
               <button
                 type="button"
@@ -389,7 +421,7 @@ export function ProductConfigurator({
                     : "border-white/15 text-muted hover:text-foreground",
                 )}
               >
-                Jacquard (+{formatIdr(15_000)})
+                Jacquard (+{formatIdr(jacquardPrice)})
               </button>
             </div>
           </div>

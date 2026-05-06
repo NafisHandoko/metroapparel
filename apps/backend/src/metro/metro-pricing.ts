@@ -2,8 +2,8 @@
  * Harga Metro (IDR) - harus selaras dengan `apps/storefront/lib/data/catalog.ts`
  * dan logika `ProductConfigurator` (total + metadata).
  *
- * Admin dapat override daftar add-on per produk lewat metadata `metro_addon_catalog`
- * (JSON array of { id, label, price, description?, input?, group? }).
+ * Add-on global + filter produk: metadata toko `metro_addon_rules` (dikelola lewat
+ * Admin → Settings → Metro add-on). Legacy: `metro_addon_catalog` per produk (parser di bawah).
  */
 
 export type ProductKind =
@@ -325,10 +325,6 @@ export function parseAddonCatalogFromProductMetadata(
   }
 }
 
-export function metroAddonCatalogSeedJson(): string {
-  return JSON.stringify(defaultAdditionalOptions);
-}
-
 /**
  * Hitung total & rincian dari metadata baris (sama logika dengan storefront configurator).
  */
@@ -369,7 +365,10 @@ export function computeMetroLineFromMetadata(
     0,
     parseInt(metadata.up_size_qty ?? "0", 10) || 0,
   );
-  const upExtra = upSizeQty * 10_000;
+  const upUnit =
+    addonCatalog.find((o) => o.id === "up-size" && o.input === "quantity")
+      ?.price ?? 10_000;
+  const upExtra = upSizeQty * upUnit;
   if (upExtra) {
     breakdown.push({ label: `Up size (x${upSizeQty})`, amount: upExtra });
     sum += upExtra;
@@ -377,11 +376,19 @@ export function computeMetroLineFromMetadata(
 
   const fabric = metadata.fabric_extra ?? "";
   if (fabric === "emboss") {
-    breakdown.push({ label: "Kain emboss", amount: 10_000 });
-    sum += 10_000;
+    const opt = addonCatalog.find(
+      (o) => o.id === "emboss" && o.group === "fabric-extra",
+    );
+    const amt = opt?.price ?? 10_000;
+    breakdown.push({ label: opt?.label ?? "Kain emboss", amount: amt });
+    sum += amt;
   } else if (fabric === "jacquard") {
-    breakdown.push({ label: "Kain jacquard", amount: 15_000 });
-    sum += 15_000;
+    const opt = addonCatalog.find(
+      (o) => o.id === "jacquard" && o.group === "fabric-extra",
+    );
+    const amt = opt?.price ?? 15_000;
+    breakdown.push({ label: opt?.label ?? "Kain jacquard", amount: amt });
+    sum += amt;
   }
 
   const ultimateIncludes3d = kind === "jersey-set" && tierId === "ultimate";

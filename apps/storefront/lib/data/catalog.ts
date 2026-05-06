@@ -220,6 +220,7 @@ export type AdditionalOption = {
   group?: "fabric-extra";
 };
 
+/** Fallback bila API add-on gagal; sumber utama = Medusa Admin → Settings → Metro add-on. */
 export const additionalOptions: AdditionalOption[] = [
   { id: "3d-logo", label: "3D logo", price: 20_000 },
   {

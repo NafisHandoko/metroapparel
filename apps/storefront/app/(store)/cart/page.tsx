@@ -67,8 +67,7 @@ export default async function CartPage() {
         <p className="mt-2 text-sm text-muted">
           Harga baris memakai total Metro (paket + opsi) yang dihitung ulang di server dan masuk ke
           subtotal Medusa. Rincian add-on tampil di bawah setiap baris; admin dapat mengatur daftar
-          add-on per produk lewat metadata <code className="text-xs">metro_addon_catalog</code> di
-          Admin.
+          add-on global lewat Medusa Admin → Settings → Metro add-on.
         </p>
         <ul className="mt-10 divide-y divide-white/10 border border-white/10 rounded-xl">
           {cart.items.map((item) => (

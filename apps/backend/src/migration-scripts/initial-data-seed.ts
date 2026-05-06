@@ -1,6 +1,5 @@
 import { MedusaContainer } from "@medusajs/framework";
 
-import { metroAddonCatalogSeedJson } from "../metro/metro-pricing";
 import {
   ContainerRegistrationKeys,
   ModuleRegistrationName,
@@ -20,7 +19,14 @@ import {
   createTaxRegionsWorkflow,
   linkSalesChannelsToApiKeyWorkflow,
   linkSalesChannelsToStockLocationWorkflow,
+  updateStoresWorkflow,
 } from "@medusajs/medusa/core-flows";
+
+import {
+  METRO_ADDON_RULES_METADATA_KEY,
+  defaultMetroAddonRulesPayload,
+  serializeMetroAddonRulesPayload,
+} from "../metro/metro-addon-rules";
 
 const COUNTRY_ID = "id";
 
@@ -355,6 +361,37 @@ export default async function initial_data_seed({
     logger.info(`Store "${METRO_STORE_NAME}" dibuat.`);
   } else {
     logger.info(`Store "${METRO_STORE_NAME}" sudah ada; melewati createStoresWorkflow.`);
+  }
+
+  const { data: allStoresForAddons } = await query.graph({
+    entity: "store",
+    fields: ["id", "metadata", "name"],
+  });
+  const metroStoreRow = (
+    (allStoresForAddons ?? []) as {
+      id?: string;
+      metadata?: Record<string, unknown> | null;
+      name?: string;
+    }[]
+  ).find((s) => s.name === METRO_STORE_NAME) ?? allStoresForAddons?.[0];
+  if (
+    metroStoreRow?.id &&
+    metroStoreRow.metadata?.[METRO_ADDON_RULES_METADATA_KEY] == null
+  ) {
+    await updateStoresWorkflow(container).run({
+      input: {
+        selector: { id: metroStoreRow.id },
+        update: {
+          metadata: {
+            ...(metroStoreRow.metadata ?? {}),
+            [METRO_ADDON_RULES_METADATA_KEY]: serializeMetroAddonRulesPayload(
+              defaultMetroAddonRulesPayload(),
+            ),
+          },
+        },
+      },
+    });
+    logger.info("Metadata add-on global (metro_addon_rules) diset ke default seed.");
   }
 
   logger.info("Seeding region (Indonesia / IDR)...");
@@ -778,8 +815,6 @@ export default async function initial_data_seed({
         category_ids: [categoryId],
         metadata: {
           metro_kind: p.metro_kind,
-          /** JSON daftar add-on; admin bisa edit di Product metadata. */
-          metro_addon_catalog: metroAddonCatalogSeedJson(),
         },
         images: p.imageUrls.map((url) => ({ url })),
         options: [

@@ -19,6 +19,7 @@ function mapStoreProductToProduct(p: HttpTypes.StoreProduct): Product | null {
     "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=900&q=80";
 
   return {
+    medusaProductId: p.id ?? "",
     handle: p.handle ?? "",
     name: p.title,
     category: cat?.name ?? "Produk",

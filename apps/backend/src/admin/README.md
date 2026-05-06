@@ -1,5 +1,7 @@
 # Admin Customizations
 
+Metro: **Settings → Metro add-on** (`src/admin/routes/settings/metro-addons/page.tsx`) mengatur biaya tambahan global (API `GET/POST /admin/metro-addon-catalog`).
+
 You can extend the Medusa Admin to add widgets and new pages. Your customizations interact with API routes to provide merchants with custom functionalities.
 
 > Learn more about Admin Extensions in [this documentation](https://docs.medusajs.com/learn/fundamentals/admin).

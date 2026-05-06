@@ -87,6 +87,8 @@ export const whyUs = [
 ];
 
 export type Product = {
+  /** ID produk Medusa — dipakai untuk memuat add-on global & filter. */
+  medusaProductId: string;
   handle: string;
   name: string;
   category: string;
