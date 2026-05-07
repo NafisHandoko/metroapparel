@@ -1,8 +1,8 @@
 "use client";
 
-import * as React from "react";
 import { useReducedMotion } from "framer-motion";
 
+import { InfiniteMarquee } from "@/components/motion/infinite-marquee";
 import { clientLogos } from "@/lib/data/site";
 import { cn } from "@/lib/utils";
 
@@ -34,66 +34,8 @@ function LogoRow({ keySuffix }: { keySuffix: string }) {
   );
 }
 
-const MAX_SEGMENTS = 18;
-
 export function ClientsSection() {
   const reduce = useReducedMotion();
-  const viewportRef = React.useRef<HTMLDivElement>(null);
-  const trackRef = React.useRef<HTMLDivElement>(null);
-  const copyARef = React.useRef<HTMLDivElement>(null);
-  const copyBRef = React.useRef<HTMLDivElement>(null);
-  const [loopPx, setLoopPx] = React.useState(0);
-  const [segmentCount, setSegmentCount] = React.useState(2);
-
-  const measure = React.useCallback(() => {
-    const a = copyARef.current;
-    const b = copyBRef.current;
-    const view = viewportRef.current;
-    if (!a || !b) return;
-    const loop = Math.round(b.offsetLeft - a.offsetLeft);
-    if (loop <= 0) return;
-    setLoopPx(loop);
-
-    if (view) {
-      const vw = view.clientWidth;
-      // Cukup segmen agar track >= viewport + buffer, supaya tidak ada "lubang" di kanan
-      const minSegments = Math.max(
-        2,
-        Math.min(MAX_SEGMENTS, Math.ceil(vw / loop) + 3),
-      );
-      setSegmentCount(minSegments);
-    }
-  }, []);
-
-  React.useLayoutEffect(() => {
-    if (reduce) return;
-    const view = viewportRef.current;
-    const track = trackRef.current;
-    if (!view || !track) return;
-    measure();
-    const ro = new ResizeObserver(() => measure());
-    ro.observe(view);
-    ro.observe(track);
-    return () => ro.disconnect();
-  }, [measure, reduce]);
-
-  const durationSec =
-    loopPx > 0 ? Math.max(24, Math.min(60, loopPx / 38)) : 0;
-
-  if (reduce) {
-    return (
-      <section className="border-t border-white/10 py-16 sm:py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs font-semibold uppercase tracking-[0.35em] text-muted">
-            Dipercaya organisasi & komunitas
-          </p>
-          <div className="mt-10 flex flex-wrap justify-center gap-4 sm:gap-6">
-            <LogoRow keySuffix="static" />
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section className="border-t border-white/10 py-16 sm:py-20">
@@ -101,37 +43,17 @@ export function ClientsSection() {
         <p className="text-center text-xs font-semibold uppercase tracking-[0.35em] text-muted">
           Dipercaya organisasi & komunitas
         </p>
-        <div
-          ref={viewportRef}
-          className="relative mt-10 min-h-[3.5rem] overflow-hidden mask-[linear-gradient(90deg,transparent,black_8%,black_92%,transparent)]"
-        >
-          <div
-            ref={trackRef}
-            className={cn(
-              "flex w-max gap-4 will-change-transform sm:gap-6",
-              loopPx > 0 && "hover:[animation-play-state:paused]",
-            )}
-            style={
-              loopPx > 0
-                ? ({
-                    ["--marquee-x" as string]: `${-loopPx}px`,
-                    animation: `marquee-seamless ${durationSec}s linear infinite`,
-                  } as React.CSSProperties)
-                : undefined
-            }
-          >
-            {Array.from({ length: segmentCount }, (_, i) => (
-              <div
-                key={i}
-                ref={i === 0 ? copyARef : i === 1 ? copyBRef : undefined}
-                className="flex shrink-0 gap-4 sm:gap-6"
-                aria-hidden={i > 0}
-              >
-                <LogoRow keySuffix={`seg-${i}`} />
-              </div>
-            ))}
-          </div>
-        </div>
+        {!reduce ? (
+          <p className="mt-2 text-center text-[11px] text-muted/80">
+            Klik-tahan dan geser untuk menggeser daftar klien.
+          </p>
+        ) : null}
+        <InfiniteMarquee
+          reducedMotion={!!reduce}
+          ariaLabel="Logo klien, dapat diseret horizontal"
+          viewportClassName={reduce ? "mt-10" : "mt-6 min-h-[3.5rem]"}
+          renderSegment={(_, keySuffix) => <LogoRow keySuffix={keySuffix} />}
+        />
       </div>
     </section>
   );

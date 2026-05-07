@@ -1,10 +1,41 @@
 "use client";
 
 import Image from "next/image";
-import { motion, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 
-import { Reveal, RevealItem, RevealStagger } from "@/components/motion/reveal";
+import { InfiniteMarquee } from "@/components/motion/infinite-marquee";
+import { Reveal } from "@/components/motion/reveal";
 import { galleryImages } from "@/lib/data/site";
+import { cn } from "@/lib/utils";
+
+function GallerySlide({ src, index }: { src: string; index: number }) {
+  return (
+    <div
+      className={cn(
+        "group relative aspect-[4/5] w-[min(72vw,260px)] shrink-0 overflow-hidden rounded-lg border border-white/10 bg-surface",
+        "sm:w-64 md:w-72 lg:w-80",
+      )}
+    >
+      <Image
+        src={src}
+        alt={`Galeri jersey ${index + 1}`}
+        fill
+        className="object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-[1.06]"
+        sizes="(max-width: 640px) 72vw, 320px"
+      />
+    </div>
+  );
+}
+
+function GallerySegment({ keySuffix }: { keySuffix: string }) {
+  return (
+    <>
+      {galleryImages.map((src, i) => (
+        <GallerySlide key={`${src}-${keySuffix}-${i}`} src={src} index={i} />
+      ))}
+    </>
+  );
+}
 
 export function GallerySection() {
   const reduce = useReducedMotion();
@@ -26,50 +57,18 @@ export function GallerySection() {
           </p>
         </Reveal>
 
-        <div className="mt-12 lg:hidden">
-          <RevealStagger className="grid grid-cols-2 gap-3 sm:gap-4">
-            {galleryImages.map((src, i) => (
-              <RevealItem key={src}>
-                <motion.div
-                  className="relative aspect-[4/5] overflow-hidden rounded-lg border border-white/10 bg-surface"
-                  whileHover={reduce ? undefined : { scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                >
-                  <Image
-                    src={src}
-                    alt={`Galeri jersey ${i + 1}`}
-                    fill
-                    className="object-cover transition-transform duration-700 ease-out will-change-transform hover:scale-[1.05]"
-                    sizes="(max-width: 1024px) 50vw, 33vw"
-                  />
-                </motion.div>
-              </RevealItem>
-            ))}
-          </RevealStagger>
-        </div>
+        {/* {!reduce ? (
+          <p className="mt-8 text-center text-[11px] text-muted/80">
+            Klik-tahan dan geser untuk menggeser galeri.
+          </p>
+        ) : null} */}
 
-        <RevealStagger className="mt-12 hidden gap-4 lg:flex lg:snap-x lg:snap-mandatory lg:overflow-x-auto lg:pb-4 lg:pt-1 [scrollbar-width:thin]">
-          {galleryImages.map((src, i) => (
-            <RevealItem
-              key={src}
-              className="relative w-[min(72vw,320px)] shrink-0 snap-center sm:w-[min(56vw,380px)]"
-            >
-              <motion.div
-                className="relative aspect-[4/5] overflow-hidden rounded-lg border border-white/10 bg-surface"
-                whileHover={reduce ? undefined : { y: -4, scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 380, damping: 26 }}
-              >
-                <Image
-                  src={src}
-                  alt={`Galeri jersey ${i + 1}`}
-                  fill
-                  className="object-cover transition-transform duration-700 ease-out will-change-transform hover:scale-[1.06]"
-                  sizes="380px"
-                />
-              </motion.div>
-            </RevealItem>
-          ))}
-        </RevealStagger>
+        <InfiniteMarquee
+          reducedMotion={!!reduce}
+          ariaLabel="Galeri foto lapangan, dapat diseret horizontal"
+          viewportClassName={reduce ? "mt-10" : "mt-6 min-h-[min(72vw,360px)] sm:min-h-[22rem]"}
+          renderSegment={(_, keySuffix) => <GallerySegment keySuffix={keySuffix} />}
+        />
       </div>
     </section>
   );
