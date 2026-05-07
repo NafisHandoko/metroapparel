@@ -18,7 +18,6 @@
   --font-display: var(--font-oswald), ui-sans-serif, system-ui, sans-serif;
   --animate-accordion-down: accordion-down 0.32s cubic-bezier(0.22, 1, 0.36, 1);
   --animate-accordion-up: accordion-up 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  --animate-marquee: marquee 42s linear infinite;
   --animate-gradient-drift: gradient-drift 18s ease-in-out infinite;
   --animate-cta-pulse: cta-pulse 5s ease-in-out infinite;
 }
@@ -41,12 +40,13 @@
   }
 }
 
-@keyframes marquee {
-  0% {
-    transform: translateX(0);
+/* Clients marquee: distance set inline as --marquee-x (negative px) */
+@keyframes marquee-seamless {
+  from {
+    transform: translate3d(0, 0, 0);
   }
-  100% {
-    transform: translateX(-50%);
+  to {
+    transform: translate3d(var(--marquee-x, 0px), 0, 0);
   }
 }
 
