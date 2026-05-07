@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 
 import { addConfiguratorToCartAction } from "@/app/actions/metro-cart";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,7 @@ export function ProductConfigurator({
     typeof process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY === "string" &&
     process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY.length > 0;
 
-  const tiers = tiersForKind(kind);
+  const tiers = useMemo(() => tiersForKind(kind), [kind]);
   const [tierId, setTierId] = useState(tiers[0]?.id ?? "");
   const [collarId, setCollarId] = useState(
     () => collarOptions[0]?.id ?? "o-neck",
@@ -60,6 +60,14 @@ export function ProductConfigurator({
 
   const ultimateIncludes3d = kind === "jersey-set" && tierId === "ultimate";
 
+  const resolvedCollarId = useMemo(
+    () =>
+      collarOptions.some((c) => c.id === collarId)
+        ? collarId
+        : (collarOptions[0]?.id ?? "o-neck"),
+    [collarOptions, collarId],
+  );
+
   const embossFabric = addonOptions.find(
     (o) => o.id === "emboss" && o.group === "fabric-extra",
   );
@@ -72,26 +80,20 @@ export function ProductConfigurator({
     addonOptions.find((o) => o.id === "up-size" && o.input === "quantity")
       ?.price ?? 10_000;
 
-  useEffect(() => {
-    if (ultimateIncludes3d) {
+  const tier = tiers.find((t) => t.id === tierId);
+  const collar = collarOptions.find((c) => c.id === resolvedCollarId);
+
+  function selectTier(id: string) {
+    setTierId(id);
+    if (kind === "jersey-set" && id === "ultimate") {
       setAddOns((prev) => ({ ...prev, "3d-logo": false }));
     }
-  }, [ultimateIncludes3d]);
-
-  useEffect(() => {
-    setCollarId((prev) =>
-      collarOptions.some((c) => c.id === prev)
-        ? prev
-        : (collarOptions[0]?.id ?? "o-neck"),
-    );
-  }, [collarOptions]);
-
-  const tier = tiers.find((t) => t.id === tierId);
-  const collar = collarOptions.find((c) => c.id === collarId);
+  }
   const collarExtra = showCollarPicker(kind) ? (collar?.surcharge ?? 0) : 0;
   const total = useMemo(() => {
-    if (!tier) return 0;
-    let sum = tier.price + collarExtra;
+    const t = tiers.find((x) => x.id === tierId);
+    if (!t) return 0;
+    let sum = t.price + collarExtra;
     if (oversize) sum += oversizeSurcharge;
     sum += upSizeQty * upSizeUnit;
     if (fabricExtra === "emboss") sum += embossPrice;
@@ -105,7 +107,8 @@ export function ProductConfigurator({
     }
     return sum;
   }, [
-    tier,
+    tierId,
+    tiers,
     collarExtra,
     oversize,
     upSizeQty,
@@ -123,12 +126,14 @@ export function ProductConfigurator({
   }
 
   const waMessage = useMemo(() => {
+    const t = tiers.find((x) => x.id === tierId);
+    const col = collarOptions.find((c) => c.id === resolvedCollarId);
     const lines = [
       `Halo ${site.name},`,
       `Saya ingin pesan: *${productName}* (/products/${productHandle})`,
-      tier ? `Paket: *${tier.name}* (${formatIdr(tier.price)})` : "",
-      showCollarPicker(kind) && collar
-        ? `Kerah: *${collar.label}*${collar.surcharge ? ` (+${formatIdr(collar.surcharge)})` : ""}`
+      t ? `Paket: *${t.name}* (${formatIdr(t.price)})` : "",
+      showCollarPicker(kind) && col
+        ? `Kerah: *${col.label}*${col.surcharge ? ` (+${formatIdr(col.surcharge)})` : ""}`
         : "",
       `Ukuran: *${size}*${oversize ? " + *Oversize*" : ""}`,
       upSizeQty > 0
@@ -152,8 +157,8 @@ export function ProductConfigurator({
   }, [
     productName,
     productHandle,
-    tier,
-    collar,
+    tierId,
+    resolvedCollarId,
     kind,
     size,
     oversize,
@@ -164,6 +169,8 @@ export function ProductConfigurator({
     ultimateIncludes3d,
     addonOptions,
     upSizeUnit,
+    tiers,
+    collarOptions,
   ]);
 
   const waHref = getWhatsAppLink(waMessage);
@@ -185,7 +192,7 @@ export function ProductConfigurator({
       tier_name: tier?.name ?? "",
       size,
       oversize: oversize ? "yes" : "no",
-      collar_id: showCollarPicker(kind) ? collarId : "",
+      collar_id: showCollarPicker(kind) ? resolvedCollarId : "",
       collar_label: showCollarPicker(kind) ? (collar?.label ?? "") : "",
       fabric_extra: fabricExtra ?? "",
       up_size_qty: String(upSizeQty),
@@ -228,7 +235,7 @@ export function ProductConfigurator({
             <button
               key={t.id}
               type="button"
-              onClick={() => setTierId(t.id)}
+              onClick={() => selectTier(t.id)}
               className={cn(
                 "rounded-xl border p-4 text-left transition-colors",
                 tierId === t.id
@@ -273,7 +280,7 @@ export function ProductConfigurator({
                 onClick={() => setCollarId(c.id)}
                 className={cn(
                   "flex items-center justify-between rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
-                  collarId === c.id
+                  resolvedCollarId === c.id
                     ? "border-brand bg-brand/10 text-foreground"
                     : "border-white/10 text-muted hover:border-white/25 hover:text-foreground",
                 )}

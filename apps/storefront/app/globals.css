@@ -16,8 +16,11 @@
   --color-surface: var(--surface);
   --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-oswald), ui-sans-serif, system-ui, sans-serif;
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-accordion-down: accordion-down 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-accordion-up: accordion-up 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-marquee: marquee 42s linear infinite;
+  --animate-gradient-drift: gradient-drift 18s ease-in-out infinite;
+  --animate-cta-pulse: cta-pulse 5s ease-in-out infinite;
 }
 
 @keyframes accordion-down {
@@ -35,6 +38,39 @@
   }
   to {
     height: 0;
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes gradient-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate(3%, -4%) scale(1.08);
+    opacity: 0.9;
+  }
+}
+
+@keyframes cta-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.06);
   }
 }
 

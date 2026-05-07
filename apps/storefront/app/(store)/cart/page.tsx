@@ -14,22 +14,26 @@ function MetroLineBreakdown({
 }) {
   const raw = metadata?.metro_price_breakdown;
   if (typeof raw !== "string") return null;
+  let lines: { label: string; amount: number }[] | null = null;
   try {
-    const lines = JSON.parse(raw) as { label: string; amount: number }[];
-    if (!Array.isArray(lines) || !lines.length) return null;
-    return (
-      <ul className="mt-2 max-w-md space-y-1 rounded-md border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-muted">
-        {lines.map((l, i) => (
-          <li key={i} className="flex justify-between gap-4">
-            <span className="text-foreground/90">{l.label}</span>
-            <span className="shrink-0 tabular-nums">{formatIdr(l.amount)}</span>
-          </li>
-        ))}
-      </ul>
-    );
+    const parsed = JSON.parse(raw) as unknown;
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      lines = parsed as { label: string; amount: number }[];
+    }
   } catch {
     return null;
   }
+  if (!lines) return null;
+  return (
+    <ul className="mt-2 max-w-md space-y-1 rounded-md border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-muted">
+      {lines.map((l, i) => (
+        <li key={i} className="flex justify-between gap-4">
+          <span className="text-foreground/90">{l.label}</span>
+          <span className="shrink-0 tabular-nums">{formatIdr(l.amount)}</span>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 export const metadata: Metadata = {

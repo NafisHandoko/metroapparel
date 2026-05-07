@@ -4,13 +4,14 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Reveal } from "@/components/motion/reveal";
 import { faqItems } from "@/lib/data/site";
 
 export function FaqSection() {
   return (
     <section id="faq" className="scroll-mt-24 border-t border-white/10 py-20 sm:py-24">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
+        <Reveal className="text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">
             FAQ
           </p>
@@ -20,7 +21,7 @@ export function FaqSection() {
           <p className="mt-3 text-muted">
             Jawaban singkat untuk pertanyaan yang paling sering masuk ke tim kami.
           </p>
-        </div>
+        </Reveal>
         <Accordion type="single" collapsible className="mt-12 w-full">
           {faqItems.map((item, i) => (
             <AccordionItem key={item.q} value={`item-${i}`}>
