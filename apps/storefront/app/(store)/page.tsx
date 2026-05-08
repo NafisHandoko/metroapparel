@@ -1,5 +1,4 @@
 import { CtaSection } from "@/components/sections/cta-section";
-import { CategoriesSection } from "@/components/sections/categories-section";
 import { ClientsSection } from "@/components/sections/clients-section";
 import { FaqSection } from "@/components/sections/faq-section";
 import { FeaturedProductsSection } from "@/components/sections/featured-products-section";
@@ -21,7 +20,6 @@ export default function HomePage() {
     <>
       <HeroSection />
       <SocialProofSection />
-      <CategoriesSection />
       <WhyUsSection />
       <FeaturedProductsSection />
       <GallerySection />

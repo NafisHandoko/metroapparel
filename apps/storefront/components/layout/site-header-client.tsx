@@ -12,7 +12,7 @@ import { getWhatsAppLink } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 
 const nav = [
-  { href: "/#categories", label: "Kategori" },
+  { href: "/", label: "Beranda" },
   { href: "/products", label: "Produk" },
   { href: "/#why", label: "Keunggulan" },
   { href: "/#faq", label: "FAQ" },
