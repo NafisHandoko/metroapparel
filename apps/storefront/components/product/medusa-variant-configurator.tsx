@@ -18,6 +18,10 @@ import {
   type SizeOption,
 } from "@/lib/data/catalog";
 import {
+  metroBulletsForOptionValue,
+  parseMetroOptionDetailsFromMetadata,
+} from "@/lib/medusa/metro-option-details";
+import {
   defaultVariantChoice,
   findVariantAfterOptionChange,
   selectableValuesForOption,
@@ -76,6 +80,14 @@ export function MedusaVariantConfigurator({
   );
 
   const options = useMemo(() => optionsOrdered(product), [product]);
+
+  const optionDetailsDoc = useMemo(
+    () =>
+      parseMetroOptionDetailsFromMetadata(
+        product.metadata as Record<string, unknown> | null | undefined,
+      ),
+    [product.metadata],
+  );
 
   const [selected, setSelected] = useState<HttpTypes.StoreProductVariant | null>(
     () => defaultVariantChoice(variants),
@@ -312,7 +324,8 @@ export function MedusaVariantConfigurator({
             </h2>
             <p className="mt-1 text-xs text-muted">
               Urutan nilai: termurah ke termahal (kiri ke kanan). Harga mengikuti varian Medusa
-              untuk kombinasi opsi saat ini.
+              untuk kombinasi opsi saat ini. Poin di bawahnya diisi dari Admin → produk ini → blok
+              «Metro — detail per nilai opsi».
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {valuesByPrice.map((v) => {
@@ -322,13 +335,18 @@ export function MedusaVariantConfigurator({
                   opt.id,
                   v.value,
                 );
+                const bullets = metroBulletsForOptionValue(
+                  optionDetailsDoc,
+                  opt.id ?? "",
+                  v.value,
+                );
                 return (
                   <button
                     key={v.id}
                     type="button"
                     onClick={() => onPickOptionValue(opt.id, v.value)}
                     className={cn(
-                      "rounded-md border px-3 py-2 text-left text-sm font-semibold transition-colors",
+                      "max-w-[min(100%,18rem)] rounded-md border px-3 py-2 text-left text-sm font-semibold transition-colors",
                       currentVal === v.value
                         ? "border-brand bg-brand/15 text-brand"
                         : "border-white/15 text-muted hover:border-white/30 hover:text-foreground",
@@ -339,6 +357,13 @@ export function MedusaVariantConfigurator({
                       <span className="mt-0.5 block text-xs font-medium text-brand/90">
                         {formatIdr(amt)}
                       </span>
+                    ) : null}
+                    {bullets.length ? (
+                      <ul className="mt-2 list-disc pl-4 text-left text-xs font-normal normal-case leading-snug text-muted">
+                        {bullets.map((line, i) => (
+                          <li key={i}>{line}</li>
+                        ))}
+                      </ul>
                     ) : null}
                   </button>
                 );

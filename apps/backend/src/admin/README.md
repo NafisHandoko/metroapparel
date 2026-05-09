@@ -4,6 +4,8 @@ Metro: **Settings → Metro add-on** (`src/admin/routes/settings/metro-addons/pa
 
 **Order:** widget `src/admin/widgets/order-metro-details.tsx` menampilkan kerah, paket, dan rincian harga Metro di atas detail order (`order.details.before`).
 
+**Produk:** widget `src/admin/widgets/product-metro-option-details.tsx` di akhir halaman detail produk (`product.details.after`) — form untuk poin per **nilai opsi** (mis. Essential / Elite); disimpan di `product.metadata.metro_option_details_json` dan ditampilkan di storefront pada tiap chip opsi.
+
 You can extend the Medusa Admin to add widgets and new pages. Your customizations interact with API routes to provide merchants with custom functionalities.
 
 > Learn more about Admin Extensions in [this documentation](https://docs.medusajs.com/learn/fundamentals/admin).
