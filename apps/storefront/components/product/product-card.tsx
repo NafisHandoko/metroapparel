@@ -6,7 +6,7 @@ import { motion, useReducedMotion } from "framer-motion";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatIdr, minPriceForKind } from "@/lib/data/catalog";
+import { formatIdr } from "@/lib/data/catalog";
 import type { Product } from "@/lib/data/site";
 
 type ProductCardProps = {
@@ -15,7 +15,8 @@ type ProductCardProps = {
 
 export function ProductCard({ product }: ProductCardProps) {
   const reduce = useReducedMotion();
-  const from = minPriceForKind(product.kind);
+  const from =
+    product.minPriceIdr !== null ? formatIdr(product.minPriceIdr) : "—";
 
   return (
     <Link href={`/products/${product.handle}`} className="group block">
@@ -44,7 +45,7 @@ export function ProductCard({ product }: ProductCardProps) {
               {product.name}
             </h3>
             <p className="mt-1 text-xs font-medium text-brand">
-              Mulai {formatIdr(from)}
+              {product.minPriceIdr !== null ? `Mulai ${from}` : "Lihat varian & harga"}
             </p>
           </CardContent>
         </Card>

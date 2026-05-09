@@ -1,52 +1,94 @@
 "use client";
 
+import type { HttpTypes } from "@medusajs/types";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 
-import { addConfiguratorToCartAction } from "@/app/actions/metro-cart";
+import { addMetroConfiguratorToCartAction } from "@/app/actions/metro-cart";
 import { Button } from "@/components/ui/button";
 import {
   formatIdr,
+  inferTierIdFromPackageLabel,
   oversizeSurcharge,
-  showCollarPicker,
+  showCollarPickerForProductHandle,
   sizeOptions,
-  tiersForKind,
   type AdditionalOption,
   type CollarOption,
   type ProductKind,
   type SizeOption,
 } from "@/lib/data/catalog";
+import {
+  defaultVariantChoice,
+  findVariantAfterOptionChange,
+  selectableValuesForOption,
+  variantCalculatedAmount,
+} from "@/lib/medusa/variant-picker";
 import { site } from "@/lib/data/site";
 import { getWhatsAppLink } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 
-type ProductConfiguratorProps = {
-  productName: string;
-  productHandle: string;
-  kind: ProductKind;
-  /** Dari Medusa (pengaturan global + filter produk di Admin). */
+type MedusaVariantConfiguratorProps = {
+  product: HttpTypes.StoreProduct;
   addonOptions: AdditionalOption[];
-  /** Dari Medusa — Settings → Metro collars. */
   collarOptions: CollarOption[];
 };
 
-export function ProductConfigurator({
-  productName,
-  productHandle,
-  kind,
+function optionsOrdered(
+  product: HttpTypes.StoreProduct,
+): NonNullable<HttpTypes.StoreProduct["options"]> {
+  return [...(product.options ?? [])];
+}
+
+function inferPackageFromVariant(
+  v: HttpTypes.StoreProductVariant | null,
+): { tierId: string; tierName: string } {
+  if (!v?.options?.length) return { tierId: "", tierName: "" };
+  for (const o of v.options) {
+    const id = inferTierIdFromPackageLabel(o.value);
+    if (id) return { tierId: id, tierName: o.value };
+  }
+  const first = v.options[0];
+  return { tierId: "", tierName: first?.value ?? v.title ?? "" };
+}
+
+function priceForOptionValue(
+  variants: HttpTypes.StoreProductVariant[],
+  selected: HttpTypes.StoreProductVariant | null,
+  optionId: string,
+  value: string,
+): number | null {
+  const v = findVariantAfterOptionChange(variants, selected, optionId, value);
+  return v ? variantCalculatedAmount(v) : null;
+}
+
+export function MedusaVariantConfigurator({
+  product,
   addonOptions,
   collarOptions,
-}: ProductConfiguratorProps) {
+}: MedusaVariantConfiguratorProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [cartError, setCartError] = useState<string | null>(null);
 
-  const checkoutEnabled =
-    typeof process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY === "string" &&
-    process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY.length > 0;
+  const variants = useMemo(
+    () => product.variants ?? [],
+    [product.variants],
+  );
 
-  const tiers = useMemo(() => tiersForKind(kind), [kind]);
-  const [tierId, setTierId] = useState(tiers[0]?.id ?? "");
+  const options = useMemo(() => optionsOrdered(product), [product]);
+
+  const [selected, setSelected] = useState<HttpTypes.StoreProductVariant | null>(
+    () => defaultVariantChoice(variants),
+  );
+
+  const productHandle = product.handle ?? "";
+  const showCollar = showCollarPickerForProductHandle(productHandle);
+  const jerseyKind: ProductKind | null = useMemo(() => {
+    if (productHandle === "jersey-atasan") return "jersey-top";
+    if (productHandle === "jersey-satu-set") return "jersey-set";
+    return null;
+  }, [productHandle]);
+
   const [collarId, setCollarId] = useState(
     () => collarOptions[0]?.id ?? "o-neck",
   );
@@ -58,8 +100,6 @@ export function ProductConfigurator({
     null,
   );
 
-  const ultimateIncludes3d = kind === "jersey-set" && tierId === "ultimate";
-
   const resolvedCollarId = useMemo(
     () =>
       collarOptions.some((c) => c.id === collarId)
@@ -67,6 +107,17 @@ export function ProductConfigurator({
         : (collarOptions[0]?.id ?? "o-neck"),
     [collarOptions, collarId],
   );
+
+  const { tierId, tierName } = useMemo(
+    () => inferPackageFromVariant(selected),
+    [selected],
+  );
+
+  const ultimateIncludes3d =
+    jerseyKind === "jersey-set" && tierId === "ultimate";
+
+  const collar = collarOptions.find((c) => c.id === resolvedCollarId);
+  const collarExtra = showCollar ? (collar?.surcharge ?? 0) : 0;
 
   const embossFabric = addonOptions.find(
     (o) => o.id === "emboss" && o.group === "fabric-extra",
@@ -80,25 +131,15 @@ export function ProductConfigurator({
     addonOptions.find((o) => o.id === "up-size" && o.input === "quantity")
       ?.price ?? 10_000;
 
-  const tier = tiers.find((t) => t.id === tierId);
-  const collar = collarOptions.find((c) => c.id === resolvedCollarId);
+  const baseVariantUnit = selected ? variantCalculatedAmount(selected) : null;
 
-  function selectTier(id: string) {
-    setTierId(id);
-    if (kind === "jersey-set" && id === "ultimate") {
-      setAddOns((prev) => ({ ...prev, "3d-logo": false }));
-    }
-  }
-  const collarExtra = showCollarPicker(kind) ? (collar?.surcharge ?? 0) : 0;
   const total = useMemo(() => {
-    const t = tiers.find((x) => x.id === tierId);
-    if (!t) return 0;
-    let sum = t.price + collarExtra;
+    let sum = baseVariantUnit ?? 0;
+    sum += collarExtra;
     if (oversize) sum += oversizeSurcharge;
     sum += upSizeQty * upSizeUnit;
     if (fabricExtra === "emboss") sum += embossPrice;
     if (fabricExtra === "jacquard") sum += jacquardPrice;
-
     for (const opt of addonOptions) {
       if (opt.group === "fabric-extra") continue;
       if (opt.input === "quantity") continue;
@@ -107,8 +148,7 @@ export function ProductConfigurator({
     }
     return sum;
   }, [
-    tierId,
-    tiers,
+    baseVariantUnit,
     collarExtra,
     oversize,
     upSizeQty,
@@ -121,59 +161,60 @@ export function ProductConfigurator({
     ultimateIncludes3d,
   ]);
 
-  function toggleAddOn(id: string) {
-    setAddOns((prev) => ({ ...prev, [id]: !prev[id] }));
-  }
+  const checkoutEnabled =
+    typeof process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY === "string" &&
+    process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY.length > 0;
 
   const waMessage = useMemo(() => {
-    const t = tiers.find((x) => x.id === tierId);
-    const col = collarOptions.find((c) => c.id === resolvedCollarId);
     const lines = [
       `Halo ${site.name},`,
-      `Saya ingin pesan: *${productName}* (/products/${productHandle})`,
-      t ? `Paket: *${t.name}* (${formatIdr(t.price)})` : "",
-      showCollarPicker(kind) && col
-        ? `Kerah: *${col.label}*${col.surcharge ? ` (+${formatIdr(col.surcharge)})` : ""}`
-        : "",
-      `Ukuran: *${size}*${oversize ? " + *Oversize*" : ""}`,
-      upSizeQty > 0
-        ? `Up size: *${upSizeQty}* kelipatan (+${formatIdr(upSizeQty * upSizeUnit)})`
-        : "",
-      fabricExtra ? `Kain extra: *${fabricExtra}*` : "",
+      `Saya tertarik: *${product.title}* (/products/${productHandle})`,
     ];
-    const addLines = addonOptions
-      .filter(
-        (o) =>
-          !o.group &&
-          o.input !== "quantity" &&
-          addOns[o.id] &&
-          !(o.id === "3d-logo" && ultimateIncludes3d),
-      )
-      .map((o) => `Add-on: ${o.label} (${o.price >= 0 ? "+" : ""}${formatIdr(o.price)})`);
-    lines.push(...addLines);
-    lines.push("", `Perkiraan subtotal (estimasi): *${formatIdr(total)}*`);
-    lines.push("Mohon konfirmasi MOQ, revisi desain, dan jadwal produksi. Terima kasih!");
-    return lines.filter(Boolean).join("\n");
+    for (const opt of options) {
+      const val =
+        selected?.options?.find((o) => o.option_id === opt.id)?.value ?? "";
+      if (val) lines.push(`${opt.title}: *${val}*`);
+    }
+    if (baseVariantUnit !== null) {
+      lines.push(`Harga varian Medusa: *${formatIdr(baseVariantUnit)}*`);
+    }
+    if (showCollar && collar) {
+      lines.push(
+        `Kerah: *${collar.label}*${collar.surcharge ? ` (+${formatIdr(collar.surcharge)})` : ""}`,
+      );
+    }
+    lines.push(`Ukuran: *${size}*${oversize ? " + *Oversize*" : ""}`);
+    lines.push(`Perkiraan total: *${formatIdr(total)}*`);
+    lines.push("Mohon info MOQ dan jadwal. Terima kasih!");
+    return lines.join("\n");
   }, [
-    productName,
+    product.title,
     productHandle,
-    tierId,
-    resolvedCollarId,
-    kind,
+    options,
+    selected,
+    baseVariantUnit,
+    showCollar,
+    collar,
     size,
     oversize,
-    upSizeQty,
-    fabricExtra,
-    addOns,
     total,
-    ultimateIncludes3d,
-    addonOptions,
-    upSizeUnit,
-    tiers,
-    collarOptions,
   ]);
 
   const waHref = getWhatsAppLink(waMessage);
+
+  function onPickOptionValue(optionId: string, value: string) {
+    const next = findVariantAfterOptionChange(
+      variants,
+      selected,
+      optionId,
+      value,
+    );
+    if (next) setSelected(next);
+  }
+
+  function toggleAddOn(id: string) {
+    setAddOns((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
 
   function buildLineMetadata(): Record<string, string> {
     const addonIds = addonOptions
@@ -185,30 +226,35 @@ export function ProductConfigurator({
           !(o.id === "3d-logo" && ultimateIncludes3d),
       )
       .map((o) => o.id);
+
+    const { tierId: tid, tierName: tname } = inferPackageFromVariant(selected);
+
     return {
-      product_name: productName,
+      product_name: product.title ?? "",
       product_handle: productHandle,
-      tier_id: tierId,
-      tier_name: tier?.name ?? "",
+      product_title: product.title ?? "",
+      tier_id: tid,
+      tier_name: tname,
+      base_variant_unit_idr:
+        baseVariantUnit !== null ? String(Math.round(baseVariantUnit)) : "0",
       size,
       oversize: oversize ? "yes" : "no",
-      collar_id: showCollarPicker(kind) ? resolvedCollarId : "",
-      collar_label: showCollarPicker(kind) ? (collar?.label ?? "") : "",
+      collar_id: showCollar ? resolvedCollarId : "",
+      collar_label: showCollar ? (collar?.label ?? "") : "",
       fabric_extra: fabricExtra ?? "",
       up_size_qty: String(upSizeQty),
       addons_json: JSON.stringify(addonIds),
-      estimated_total_idr: String(total),
+      estimated_total_idr: String(Math.round(total)),
     };
   }
 
   function addToWebsiteCart() {
-    if (!tier) return;
+    if (!selected?.id || baseVariantUnit === null) return;
     setCartError(null);
     startTransition(async () => {
-      const res = await addConfiguratorToCartAction({
+      const res = await addMetroConfiguratorToCartAction({
         productHandle,
-        tierId,
-        size,
+        variantId: selected.id,
         metadata: buildLineMetadata(),
       });
       if (res.ok) {
@@ -220,57 +266,76 @@ export function ProductConfigurator({
     });
   }
 
+  if (!variants.length) {
+    return (
+      <p className="mt-10 text-sm text-muted">
+        Produk ini belum punya varian di Medusa. Tambahkan varian & harga di Admin agar bisa
+        dipesan.
+      </p>
+    );
+  }
+
   return (
     <div className="mt-10 space-y-10 border-t border-white/10 pt-10">
-      <div>
-        <h2 className="font-display text-xl tracking-wide text-foreground">
-          Paket & harga
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Pilih paket resmi. Harga per daftar klien — final mengikuti konfirmasi
-          admin.
-        </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {tiers.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => selectTier(t.id)}
-              className={cn(
-                "rounded-xl border p-4 text-left transition-colors",
-                tierId === t.id
-                  ? "border-brand bg-brand/10 shadow-[0_0_24px_-8px_rgba(158,255,0,0.4)]"
-                  : "border-white/10 bg-white/[0.02] hover:border-white/20",
-              )}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <span className="font-display text-lg text-foreground">{t.name}</span>
-                <span className="shrink-0 text-sm font-semibold text-brand">
-                  {formatIdr(t.price)}
-                </span>
-              </div>
-              {t.subtitle ? (
-                <p className="mt-1 text-xs uppercase tracking-wider text-brand/90">
-                  {t.subtitle}
-                </p>
-              ) : null}
-              <ul className="mt-3 space-y-1.5 text-xs leading-relaxed text-muted">
-                {t.features.map((f) => (
-                  <li key={f}>— {f}</li>
-                ))}
-              </ul>
-            </button>
-          ))}
-        </div>
-      </div>
+      {options.map((opt) => {
+        const allowed = selectableValuesForOption(
+          variants,
+          selected,
+          opt.id,
+        );
+        const values = (opt.values ?? []).filter((v) => allowed.has(v.value));
+        const currentVal =
+          selected?.options?.find((o) => o.option_id === opt.id)?.value ?? "";
 
-      {showCollarPicker(kind) ? (
+        return (
+          <div key={opt.id}>
+            <h2 className="font-display text-xl tracking-wide text-foreground">
+              {opt.title}
+            </h2>
+            <p className="mt-1 text-xs text-muted">
+              Harga mengikuti varian di Medusa untuk kombinasi opsi saat ini.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {values.map((v) => {
+                const amt = priceForOptionValue(
+                  variants,
+                  selected,
+                  opt.id,
+                  v.value,
+                );
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => onPickOptionValue(opt.id, v.value)}
+                    className={cn(
+                      "rounded-md border px-3 py-2 text-left text-sm font-semibold transition-colors",
+                      currentVal === v.value
+                        ? "border-brand bg-brand/15 text-brand"
+                        : "border-white/15 text-muted hover:border-white/30 hover:text-foreground",
+                    )}
+                  >
+                    <span>{v.value}</span>
+                    {amt !== null ? (
+                      <span className="mt-0.5 block text-xs font-medium text-brand/90">
+                        {formatIdr(amt)}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+
+      {showCollar ? (
         <div>
           <h2 className="font-display text-xl tracking-wide text-foreground">
             Tipe kerah
           </h2>
           <p className="mt-1 text-sm text-muted">
-            Pilihan kerah jersey. Ada opsi dengan tambahan harga.
+            Dikelola di Medusa Admin → Settings → Metro collars.
           </p>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {collarOptions.map((c) => (
@@ -336,6 +401,9 @@ export function ProductConfigurator({
         <h2 className="font-display text-xl tracking-wide text-foreground">
           Biaya tambahan & opsi
         </h2>
+        <p className="mt-1 text-sm text-muted">
+          Add-on dari Medusa Admin → Settings → Metro add-on (filter per produk).
+        </p>
         <div className="mt-4 space-y-3">
           {addonOptions.map((opt) => {
             if (opt.group === "fabric-extra") return null;
@@ -454,9 +522,8 @@ export function ProductConfigurator({
         </p>
         <p className="mt-2 font-display text-3xl text-foreground">{formatIdr(total)}</p>
         <p className="mt-2 text-xs text-muted">
-          Belum termasuk ongkir & diskon qty. Checkout web memakai harga dasar varian Medusa (per
-          paket); ukuran, oversize, kerah, dan add-on dihitung di server dari metadata. Final bisa
-          lewat chat.
+          Harga dasar = varian Medusa; kerah, oversize, dan add-on ditambahkan lalu divalidasi di
+          server saat «Tambah ke keranjang» (baris `metro_price_breakdown` di keranjang).
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Button asChild size="xl" className="w-full sm:w-auto">
@@ -470,7 +537,7 @@ export function ProductConfigurator({
               size="xl"
               variant="outline"
               className="w-full border-white/25 bg-background/60 sm:w-auto"
-              disabled={!tier || isPending}
+              disabled={!selected?.id || baseVariantUnit === null || isPending}
               onClick={addToWebsiteCart}
             >
               {isPending ? "Menambahkan…" : "Tambah ke keranjang (checkout)"}

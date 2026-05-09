@@ -1,43 +1,48 @@
 import type { HttpTypes } from "@medusajs/types";
 
-import {
-  parseProductKind,
-  shopCategorySlugForKind,
-} from "@/lib/data/catalog";
 import { categorySlugToName, type Product } from "@/lib/data/site";
 import { sdk } from "@/lib/medusa/config";
+import { minMaxVariantPrices } from "@/lib/medusa/variant-picker";
 import { defaultCountryCode, getRegion } from "@/lib/medusa/regions";
 
 /**
- * `*categories` (bukan `+categories`) agar relasi diekspansi penuh ke Store API —
- * jika tidak, `categories[0].handle` sering kosong dan filter halaman kategori toko gagal.
+ * Medusa: `*variants.calculated_price` di awal `fields` (tanpa sub-path seperti
+ * `*.calculated_amount` — itu bukan relasi ORM dan memicu 500 di MikroORM populate).
+ * Pakai `country_code` + `region_id` di query agar harga varian terisi.
  */
-const PRODUCT_FIELDS =
-  "*variants.calculated_price,*variants.images,+metadata,*categories,+tags,+images,+thumbnail";
+const PRODUCT_LIST_FIELDS =
+  "*variants.calculated_price,*variants.options,+subtitle,*options,*options.values,*variants.images,+metadata,*categories,+tags,+images,+thumbnail";
 
-function mapStoreProductToProduct(p: HttpTypes.StoreProduct): Product | null {
-  const kind = parseProductKind(p.metadata?.metro_kind);
-  if (!kind) return null;
+const PRODUCT_DETAIL_FIELDS = PRODUCT_LIST_FIELDS;
+
+export function mapStoreProductToProduct(p: HttpTypes.StoreProduct): Product | null {
+  if (!p.id || !p.handle) return null;
+  const { min } = minMaxVariantPrices(p.variants);
+  const vCount = p.variants?.length ?? 0;
+  if (vCount > 0 && min === null) {
+    return null;
+  }
 
   const cat = p.categories?.[0];
-  const fallbackSlug = shopCategorySlugForKind(kind);
-  const categorySlug = cat?.handle ?? fallbackSlug;
+  const categorySlug = cat?.handle;
   const category =
-    cat?.name ?? categorySlugToName[categorySlug] ?? "Produk";
+    cat?.name ??
+    (categorySlug ? categorySlugToName[categorySlug] : undefined) ??
+    "Produk";
   const image =
     p.thumbnail ??
     p.images?.[0]?.url ??
     "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=900&q=80";
 
   return {
-    medusaProductId: p.id ?? "",
-    handle: p.handle ?? "",
+    medusaProductId: p.id,
+    handle: p.handle,
     name: p.title,
     category,
     categorySlug,
     image,
     description: p.description ?? "",
-    kind,
+    minPriceIdr: min,
   };
 }
 
@@ -63,8 +68,9 @@ export async function listMetroProducts(): Promise<Product[]> {
       method: "GET",
       query: {
         region_id: region.id,
+        country_code: defaultCountryCode(),
         limit: 100,
-        fields: PRODUCT_FIELDS,
+        fields: PRODUCT_LIST_FIELDS,
       },
       cache: "no-store",
     });
@@ -102,9 +108,10 @@ export async function getMetroProductByHandle(
       method: "GET",
       query: {
         region_id: region.id,
+        country_code: defaultCountryCode(),
         handle,
         limit: 1,
-        fields: PRODUCT_FIELDS,
+        fields: PRODUCT_DETAIL_FIELDS,
       },
       cache: "no-store",
     });

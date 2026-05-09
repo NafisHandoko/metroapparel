@@ -1,9 +1,9 @@
 /**
- * Harga Metro (IDR) - harus selaras dengan `apps/storefront/lib/data/catalog.ts`
- * dan logika `ProductConfigurator` (total + metadata).
+ * Harga Metro (IDR) — selaras dengan `apps/storefront/lib/data/catalog.ts`.
+ * Checkout baris konfigurator: total + `metro_price_breakdown` lewat route store
+ * `POST /store/carts/:id/metro-line` (harga dasar = varian Medusa + kerah/add-on).
  *
- * Add-on global + filter produk: metadata toko `metro_addon_rules` (dikelola lewat
- * Admin → Settings → Metro add-on). Legacy: `metro_addon_catalog` per produk (parser di bawah).
+ * Add-on global + filter produk: `metro-store-addons` / Admin → Metro add-on & Metro collars.
  */
 
 export type ProductKind =
@@ -326,28 +326,76 @@ export function parseAddonCatalogFromProductMetadata(
   }
 }
 
+/** Infer `tier_id` katalog dari label nilai opsi "Paket" (nama tampilan di Medusa). */
+export function inferTierIdFromPackageLabel(label: string): string | null {
+  const trimmed = label.trim();
+  if (!trimmed) return null;
+  for (const k of PRODUCT_KIND_VALUES) {
+    const t = tiersForKind(k).find((x) => x.name === trimmed);
+    if (t) return t.id;
+  }
+  return null;
+}
+
+/** Untuk aturan add-on Ultimate / 3D — hanya jersey set resmi. */
+export function inferJerseyKindFromProductHandle(
+  handle: string,
+): ProductKind | null {
+  if (handle === "jersey-atasan") return "jersey-top";
+  if (handle === "jersey-satu-set") return "jersey-set";
+  return null;
+}
+
+export function showCollarPickerForProductHandle(handle: string): boolean {
+  return handle === "jersey-atasan" || handle === "jersey-satu-set";
+}
+
+export type ComputeMetroLineInput = {
+  metadata: Record<string, string>;
+  addonCatalog: AdditionalOption[];
+  collarCatalog: CollarOption[];
+  /** Harga dasar varian Medusa (minor currency / IDR). */
+  basePackageAmount: number;
+  /** Baris pertama breakdown, mis. "Paket (Essential)". */
+  basePackageLabel: string;
+  /** Untuk aturan 3d-logo saat Ultimate. */
+  productKind: ProductKind | null;
+  /** Kerah: hanya produk jersey atasan / set. */
+  applyCollar: boolean;
+};
+
 /**
- * Hitung total & rincian dari metadata baris (sama logika dengan storefront configurator).
+ * Hitung total & rincian dari metadata baris (configurator storefront).
+ * Harga dasar paket = **nilai dari Medusa** (`basePackageAmount`), bukan pricelist statis.
  */
 export function computeMetroLineFromMetadata(
-  kind: ProductKind,
-  metadata: Record<string, string>,
-  addonCatalog: AdditionalOption[],
-  collarCatalog: CollarOption[],
+  input: ComputeMetroLineInput,
 ): { total: number; breakdown: MetroPriceLine[] } {
+  const {
+    metadata,
+    addonCatalog,
+    collarCatalog,
+    basePackageAmount,
+    basePackageLabel,
+    productKind,
+    applyCollar,
+  } = input;
+
   const breakdown: MetroPriceLine[] = [];
-  const tierId = metadata.tier_id ?? "";
-  const tiers = tiersForKind(kind);
-  const tier = tiers.find((t) => t.id === tierId);
-  if (!tier) {
-    return { total: 0, breakdown: [{ label: "Paket tidak dikenal", amount: 0 }] };
+  if (!Number.isFinite(basePackageAmount) || basePackageAmount <= 0) {
+    return {
+      total: 0,
+      breakdown: [{ label: "Harga dasar varian tidak valid", amount: 0 }],
+    };
   }
 
-  breakdown.push({ label: `Paket (${tier.name})`, amount: tier.price });
-  let sum = tier.price;
+  breakdown.push({ label: basePackageLabel, amount: basePackageAmount });
+  let sum = basePackageAmount;
 
-  const collarId = metadata.collar_id ?? "";
-  if (showCollarPicker(kind)) {
+  const tierId = metadata.tier_id ?? "";
+
+  if (applyCollar) {
+    const collarId = metadata.collar_id ?? "";
     const collarExtra =
       collarCatalog.find((c) => c.id === collarId)?.surcharge ?? 0;
     if (collarExtra) {
@@ -393,7 +441,8 @@ export function computeMetroLineFromMetadata(
     sum += amt;
   }
 
-  const ultimateIncludes3d = kind === "jersey-set" && tierId === "ultimate";
+  const ultimateIncludes3d =
+    productKind === "jersey-set" && tierId === "ultimate";
 
   let addonIds: string[] = [];
   try {

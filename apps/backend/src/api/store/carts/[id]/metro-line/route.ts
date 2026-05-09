@@ -11,15 +11,14 @@ import { z } from "zod";
 
 import {
   computeMetroLineFromMetadata,
-  parseProductKind,
+  inferJerseyKindFromProductHandle,
+  showCollarPickerForProductHandle,
 } from "../../../../../metro/metro-pricing";
-import { metroVariantSku } from "../../../../../metro/metro-variant-sku";
 import {
   getResolvedAddonCatalogForProduct,
   getResolvedCollarCatalogForProduct,
 } from "../../../../../metro/metro-store-addons";
 
-/** `defaultStoreCartFields` includes `*region.countries`, `*payment_collection`, … for HTTP `FieldParser`. `refetchCart` passes `fields` straight to remote query and must not include those `*` entries. */
 const metroLineRefetchCartFields = defaultStoreCartFields.filter(
   (field) => !field.startsWith("*"),
 );
@@ -31,7 +30,11 @@ const BodySchema = z.object({
 });
 
 type VariantRow = { id: string; sku?: string | null; product_id?: string | null };
-type ProductRow = { id: string; metadata?: Record<string, unknown> | null };
+type ProductRow = {
+  id: string;
+  handle?: string | null;
+  metadata?: Record<string, unknown> | null;
+};
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const cartId = req.params.id as string;
@@ -47,7 +50,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
   const { data: carts } = await query.graph({
     entity: "cart",
-    fields: ["id"],
+    fields: ["id", "region_id"],
     filters: { id: cartId },
   });
   if (!carts?.length) {
@@ -64,19 +67,16 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   });
   const variant = variants?.[0] as VariantRow | undefined;
   if (!variant?.product_id) {
-    throw new MedusaError(
-      MedusaError.Types.NOT_FOUND,
-      "Variant not found",
-    );
+    throw new MedusaError(MedusaError.Types.NOT_FOUND, "Variant not found");
   }
 
   const { data: products } = await query.graph({
     entity: "product",
-    fields: ["id", "metadata"],
+    fields: ["id", "handle", "metadata"],
     filters: { id: variant.product_id },
   });
   const product = products?.[0] as ProductRow | undefined;
-  if (!product) {
+  if (!product?.id) {
     throw new MedusaError(MedusaError.Types.NOT_FOUND, "Product not found");
   }
 
@@ -84,8 +84,13 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     typeof body.metadata.product_handle === "string"
       ? body.metadata.product_handle
       : "";
-  const tierId =
-    typeof body.metadata.tier_id === "string" ? body.metadata.tier_id : "";
+  if (!handle.trim() || handle.trim() !== (product.handle ?? "").trim()) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "Metadata product_handle tidak cocok dengan produk varian.",
+    );
+  }
+
   const size = typeof body.metadata.size === "string" ? body.metadata.size : "";
   if (!size.trim()) {
     throw new MedusaError(
@@ -93,24 +98,25 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       "Metadata ukuran wajib diisi.",
     );
   }
-  const expectedSku = metroVariantSku(handle, tierId);
+
+  const baseRaw = body.metadata.base_variant_unit_idr ?? "";
+  const basePackageAmount = Number.parseInt(baseRaw, 10);
   if (
-    !variant.sku ||
-    variant.sku.toUpperCase() !== expectedSku.toUpperCase()
+    Number.isNaN(basePackageAmount) ||
+    basePackageAmount < 1_000 ||
+    basePackageAmount > 50_000_000
   ) {
     throw new MedusaError(
       MedusaError.Types.INVALID_DATA,
-      "Varian tidak cocok dengan paket yang dipilih (SKU).",
+      "Harga dasar varian (base_variant_unit_idr) tidak valid.",
     );
   }
 
-  const kind = parseProductKind(product.metadata?.metro_kind);
-  if (!kind) {
-    throw new MedusaError(
-      MedusaError.Types.INVALID_DATA,
-      "Produk tidak punya metro_kind di metadata Admin.",
-    );
-  }
+  const tierName =
+    typeof body.metadata.tier_name === "string" ? body.metadata.tier_name : "";
+  const basePackageLabel = tierName.trim()
+    ? `Paket (${tierName.trim()})`
+    : "Paket";
 
   const addonCatalog = await getResolvedAddonCatalogForProduct(
     req.scope,
@@ -121,12 +127,19 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     product.id,
   );
 
-  const { total, breakdown } = computeMetroLineFromMetadata(
-    kind,
-    body.metadata,
+  const productKind = inferJerseyKindFromProductHandle(handle.trim());
+  const applyCollar = showCollarPickerForProductHandle(handle.trim());
+
+  const { total, breakdown } = computeMetroLineFromMetadata({
+    metadata: body.metadata,
     addonCatalog,
     collarCatalog,
-  );
+    basePackageAmount,
+    basePackageLabel,
+    productKind,
+    applyCollar,
+  });
+
   if (total <= 0) {
     throw new MedusaError(
       MedusaError.Types.INVALID_DATA,
@@ -150,10 +163,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     metro_price_breakdown: JSON.stringify(breakdown),
   };
 
-  const compareAt =
-    breakdown[0]?.label?.startsWith("Paket") && typeof breakdown[0]?.amount === "number"
-      ? breakdown[0].amount
-      : total;
+  const compareAt = breakdown[0]?.amount ?? total;
 
   const we = req.scope.resolve(Modules.WORKFLOW_ENGINE);
   await we.run(addToCartWorkflowId, {

@@ -24,14 +24,6 @@ export function parseProductKind(value: unknown): ProductKind | null {
     : null;
 }
 
-/** Selaras dengan seed Medusa: dua kategori toko vs siluet `metro_kind`. */
-export type ShopCategorySlug = "custom-jersey" | "toko-metro";
-
-export function shopCategorySlugForKind(kind: ProductKind): ShopCategorySlug {
-  if (kind === "jersey-top" || kind === "jersey-set") return "custom-jersey";
-  return "toko-metro";
-}
-
 export type PricelistTier = {
   id: string;
   name: string;
@@ -310,4 +302,27 @@ export function minPriceForKind(kind: ProductKind): number {
 
 export function showCollarPicker(kind: ProductKind): boolean {
   return kind === "jersey-top" || kind === "jersey-set";
+}
+
+/** Cocokkan label nilai opsi Medusa ke `tier.id` di pricelist (untuk metadata & aturan add-on). */
+export function inferTierIdFromPackageLabel(label: string): string | null {
+  const t = label.trim();
+  if (!t) return null;
+  for (const kind of PRODUCT_KIND_VALUES) {
+    const row = tiersForKind(kind).find((x) => x.name === t);
+    if (row) return row.id;
+  }
+  return null;
+}
+
+export function inferJerseyKindFromProductHandle(
+  handle: string,
+): ProductKind | null {
+  if (handle === "jersey-atasan") return "jersey-top";
+  if (handle === "jersey-satu-set") return "jersey-set";
+  return null;
+}
+
+export function showCollarPickerForProductHandle(handle: string): boolean {
+  return handle === "jersey-atasan" || handle === "jersey-satu-set";
 }

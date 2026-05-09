@@ -2,16 +2,17 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ProductConfigurator } from "@/components/product/product-configurator";
+import { MedusaVariantConfigurator } from "@/components/product/medusa-variant-configurator";
 import { Badge } from "@/components/ui/badge";
-import { formatIdr, minPriceForKind, tiersForKind } from "@/lib/data/catalog";
+import { formatIdr } from "@/lib/data/catalog";
 import { catalogListPathForCategory, site } from "@/lib/data/site";
 import { getMetroAddonOptionsForProduct } from "@/lib/medusa/metro-addon-catalog";
 import { getMetroCollarOptionsForProduct } from "@/lib/medusa/metro-collar-catalog";
 import {
   getMetroProductByHandle,
-  getMetroProductSummaryByHandle,
+  mapStoreProductToProduct,
 } from "@/lib/medusa/products";
+import { minMaxVariantPrices } from "@/lib/medusa/variant-picker";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -30,25 +31,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ProductDetailPage({ params }: PageProps) {
   const { handle } = await params;
-  const product = await getMetroProductSummaryByHandle(handle);
-  if (!product) notFound();
+  const raw = await getMetroProductByHandle(handle);
+  if (!raw?.id || !raw.handle) notFound();
+  const summary = mapStoreProductToProduct(raw);
+  if (!summary) notFound();
 
   const [addonOptions, collarOptions] = await Promise.all([
-    getMetroAddonOptionsForProduct(product.medusaProductId),
-    getMetroCollarOptionsForProduct(product.medusaProductId),
+    getMetroAddonOptionsForProduct(raw.id),
+    getMetroCollarOptionsForProduct(raw.id),
   ]);
 
-  const tierCount = tiersForKind(product.kind).length;
+  const { min, max } = minMaxVariantPrices(raw.variants);
   const priceHint =
-    tierCount > 1
-      ? `${formatIdr(minPriceForKind(product.kind))} – lihat paket di bawah`
-      : formatIdr(minPriceForKind(product.kind));
+    min !== null && max !== null && max > min
+      ? `${formatIdr(min)} – ${formatIdr(max)}`
+      : min !== null
+        ? formatIdr(min)
+        : "Lihat varian";
 
   return (
     <div className="border-b border-white/10 pb-20 pt-10 sm:pt-14">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Link
-          href={catalogListPathForCategory(product.categorySlug)}
+          href={catalogListPathForCategory(summary.categorySlug)}
           className="text-sm font-medium text-muted transition-colors hover:text-brand"
         >
           ← Kembali ke katalog
@@ -56,8 +61,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
         <div className="mt-8 grid gap-10 lg:grid-cols-2 lg:gap-14">
           <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/10 bg-surface lg:aspect-[3/4]">
             <Image
-              src={product.image}
-              alt={product.name}
+              src={summary.image}
+              alt={summary.name}
               fill
               priority
               className="object-cover"
@@ -66,29 +71,29 @@ export default async function ProductDetailPage({ params }: PageProps) {
             <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
           </div>
           <div className="flex flex-col justify-center">
-            <Badge className="w-fit">{product.category}</Badge>
+            <Badge className="w-fit">{summary.category}</Badge>
             <h1 className="mt-4 font-display text-4xl tracking-tight text-foreground sm:text-5xl md:text-6xl">
-              {product.name}
+              {summary.name}
             </h1>
+            {raw.subtitle ? (
+              <p className="mt-2 text-sm font-medium text-muted">{raw.subtitle}</p>
+            ) : null}
             <p className="mt-2 text-sm font-medium text-brand">Referensi: {priceHint}</p>
             <p className="mt-4 text-base leading-relaxed text-muted sm:text-lg">
-              {product.description}
+              {summary.description}
             </p>
             <p className="mt-6 text-sm text-muted">
-              Hybrid: pilih konfigurasi di bawah — checkout di situs (pesanan masuk Medusa Admin)
-              atau WhatsApp bila ingin diskusi produk sekaligus. Harga di keranjang = paket (varian
-              Medusa) + oversize, kerah, dan add-on dari metadata yang divalidasi di server.
+              Pilih varian (harga dari Medusa), kerah & add-on bila tersedia. Checkout memakai total
+              Metro yang divalidasi di server; rincian harga tercatat di keranjang.
             </p>
-            <ProductConfigurator
-              productName={product.name}
-              productHandle={product.handle}
-              kind={product.kind}
+            <MedusaVariantConfigurator
+              product={raw}
               addonOptions={addonOptions}
               collarOptions={collarOptions}
             />
             <div className="mt-8">
               <Link
-                href={catalogListPathForCategory(product.categorySlug)}
+                href={catalogListPathForCategory(summary.categorySlug)}
                 className="text-sm font-medium text-muted transition-colors hover:text-brand"
               >
                 ← Lihat produk lain

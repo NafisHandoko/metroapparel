@@ -2,15 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 
-import { addVariantToMetroCart, removeMetroLineItem } from "@/lib/medusa/cart-server";
+import { addMetroConfiguratorLineToCart, removeMetroLineItem } from "@/lib/medusa/cart-server";
 
-export async function addConfiguratorToCartAction(input: {
+export async function addMetroConfiguratorToCartAction(input: {
   productHandle: string;
-  tierId: string;
-  size: string;
+  variantId: string;
   metadata: Record<string, string>;
 }): Promise<{ ok: true } | { ok: false; message: string }> {
-  const result = await addVariantToMetroCart(input);
+  const result = await addMetroConfiguratorLineToCart(input);
   if (result.ok) {
     revalidatePath("/", "layout");
     revalidatePath("/cart");

@@ -59,26 +59,14 @@ function errorMessage(e: unknown): string {
 }
 
 /**
- * Metro catalog seed - tier **names** (opsi Medusa `Paket`) harus sama persis dengan
- * label paket di `apps/storefront/lib/data/catalog.ts` agar configurator & varian toko selaras.
- * Kerah, oversize, dan add-on tetap dihitung di storefront (pricelist workshop), bukan di varian Medusa.
- */
-/**
- * Kategori toko (Medusa) — dua jalur: custom jersey vs katalog apparel umum.
- * Produk individual (jersey atasan, training pants, dll.) memakai `metro_kind` di metadata.
+ * Seed katalog: kategori toko (Custom Jersey / Toko Metro) + produk/varian/harga di Medusa.
+ * Nama nilai opsi & harga seed boleh diselaraskan dengan `apps/storefront/lib/data/catalog.ts`
+ * untuk dokumentasi; storefront memakai data Admin/Medusa apa adanya.
  */
 const METRO_CATEGORIES = [
   { name: "Custom Jersey", handle: "custom-jersey" },
   { name: "Toko Metro", handle: "toko-metro" },
 ] as const;
-
-type MetroKind =
-  | "jersey-top"
-  | "jersey-set"
-  | "training-pants"
-  | "jacket"
-  | "short-pants"
-  | "polo";
 
 type TierRow = { id: string; name: string; price: number };
 
@@ -87,7 +75,6 @@ type MetroProductSeed = {
   title: string;
   categoryHandle: (typeof METRO_CATEGORIES)[number]["handle"];
   description: string;
-  metro_kind: MetroKind;
   imageUrls: string[];
   tiers: TierRow[];
 };
@@ -97,7 +84,6 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
     handle: "jersey-atasan",
     title: "Jersey Atasan",
     categoryHandle: "custom-jersey",
-    metro_kind: "jersey-top",
     description:
       "Produk utama: jersey bagian atas dengan tiga paket - Essential, Elite, dan Prime. Pilih kerah, ukuran, oversize, dan add-on; ringkasan bisa langsung dikirim ke WhatsApp.",
     imageUrls: [
@@ -113,7 +99,6 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
     handle: "jersey-satu-set",
     title: "Jersey Satu Set",
     categoryHandle: "custom-jersey",
-    metro_kind: "jersey-set",
     description:
       "Set lengkap atasan + celana: Regular (Basic), Standard (paling populer), Premium, dan Ultimate. Cocok untuk match day, liga, dan tim esports.",
     imageUrls: [
@@ -134,7 +119,6 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
     handle: "training-pants",
     title: "Training Pants",
     categoryHandle: "toko-metro",
-    metro_kind: "training-pants",
     description:
       "Celana training bahan Lotto: opsi full printing atau non printing. Pilih ukuran & add-on di bawah.",
     imageUrls: [
@@ -149,7 +133,6 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
     handle: "jaket",
     title: "Jaket",
     categoryHandle: "toko-metro",
-    metro_kind: "jacket",
     description:
       "Jaket bahan Lotto: varian printing atau non printing + bordir. Pilih paket, ukuran, dan opsi tambahan.",
     imageUrls: [
@@ -164,7 +147,6 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
     handle: "short-pants",
     title: "Short Pants",
     categoryHandle: "toko-metro",
-    metro_kind: "short-pants",
     description: "Celana pendek Lotto: full printing atau print samping.",
     imageUrls: [
       "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=900&q=80",
@@ -178,7 +160,6 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
     handle: "polo",
     title: "Polo",
     categoryHandle: "toko-metro",
-    metro_kind: "polo",
     description:
       "Polo bordir material CVC 24S - untuk corporate, sekolah, dan komunitas.",
     imageUrls: [
@@ -188,10 +169,7 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
   },
 ];
 
-/**
- * Satu varian per paket (harga mengikuti paket). Ukuran & oversize hanya di storefront
- * (metadata + `computeMetroLineFromMetadata`), bukan matriks varian Medusa.
- */
+/** Satu varian per kombinasi nilai opsi (mis. satu opsi "Paket" → satu varian per tier). */
 function buildVariants(product: MetroProductSeed): {
   title: string;
   sku: string;
@@ -829,9 +807,6 @@ export default async function initial_data_seed({
         weight: 400,
         shipping_profile_id: shippingProfile.id,
         category_ids: [categoryId],
-        metadata: {
-          metro_kind: p.metro_kind,
-        },
         images: p.imageUrls.map((url) => ({ url })),
         options: [{ title: "Paket", values: tierNames }],
         variants,

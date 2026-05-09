@@ -1,5 +1,3 @@
-import type { ProductKind } from "@/lib/data/catalog";
-
 export const site = {
   name: "Metro Apparel",
   tagline: "Custom jersey & apparel produksi lokal, kualitas premium.",
@@ -74,17 +72,17 @@ export const whyUs = [
   },
 ];
 
+/** Ringkasan produk untuk kartu katalog — harga dari varian Medusa (calculated_price). */
 export type Product = {
-  /** ID produk Medusa — dipakai untuk memuat add-on global & filter. */
   medusaProductId: string;
   handle: string;
   name: string;
   category: string;
-  /** Medusa category handle — matches `?category=` di halaman katalog */
   categorySlug?: string;
   image: string;
   description: string;
-  kind: ProductKind;
+  /** Harga terendah varian (IDR) untuk teks “Mulai …” di kartu. */
+  minPriceIdr: number | null;
 };
 
 export const galleryImages = [

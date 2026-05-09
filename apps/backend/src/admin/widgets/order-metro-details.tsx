@@ -77,6 +77,17 @@ function strMeta(m: Record<string, unknown>, key: string): string | undefined {
   return typeof v === "string" && v.trim() ? v : undefined;
 }
 
+function parseAddonIds(raw: unknown): string[] {
+  if (typeof raw !== "string" || !raw.trim()) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((x): x is string => typeof x === "string" && x.trim().length > 0);
+  } catch {
+    return [];
+  }
+}
+
 const OrderMetroDetailsWidget = ({ data }: { data: OrderLike }) => {
   const currency = (data?.currency_code ?? "idr").toString();
   const items = (data?.items ?? []).filter(isMetroLineItem);
@@ -118,6 +129,7 @@ const OrderMetroDetailsWidget = ({ data }: { data: OrderLike }) => {
               : typeof upQtyRaw === "number"
                 ? upQtyRaw
                 : 0;
+          const addonIds = parseAddonIds(m.addons_json);
 
           return (
             <div key={item.id ?? productTitle} className="px-6 py-5 space-y-3">
@@ -162,6 +174,12 @@ const OrderMetroDetailsWidget = ({ data }: { data: OrderLike }) => {
                   <span>
                     <span className="text-ui-fg-muted">Up size:</span> {upQty}{" "}
                     kelipatan
+                  </span>
+                ) : null}
+                {addonIds.length ? (
+                  <span className="min-w-0 basis-full">
+                    <span className="text-ui-fg-muted">Add-on:</span>{" "}
+                    {addonIds.map((id) => id.replace(/-/g, " ")).join(", ")}
                   </span>
                 ) : null}
               </div>
