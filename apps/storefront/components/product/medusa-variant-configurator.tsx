@@ -284,6 +284,24 @@ export function MedusaVariantConfigurator({
           opt.id,
         );
         const values = (opt.values ?? []).filter((v) => allowed.has(v.value));
+        const valuesByPrice = [...values].sort((a, b) => {
+          const pa = priceForOptionValue(
+            variants,
+            selected,
+            opt.id,
+            a.value,
+          );
+          const pb = priceForOptionValue(
+            variants,
+            selected,
+            opt.id,
+            b.value,
+          );
+          const na = pa === null ? Number.POSITIVE_INFINITY : pa;
+          const nb = pb === null ? Number.POSITIVE_INFINITY : pb;
+          if (na !== nb) return na - nb;
+          return a.value.localeCompare(b.value);
+        });
         const currentVal =
           selected?.options?.find((o) => o.option_id === opt.id)?.value ?? "";
 
@@ -293,10 +311,11 @@ export function MedusaVariantConfigurator({
               {opt.title}
             </h2>
             <p className="mt-1 text-xs text-muted">
-              Harga mengikuti varian di Medusa untuk kombinasi opsi saat ini.
+              Urutan nilai: termurah ke termahal (kiri ke kanan). Harga mengikuti varian Medusa
+              untuk kombinasi opsi saat ini.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {values.map((v) => {
+              {valuesByPrice.map((v) => {
                 const amt = priceForOptionValue(
                   variants,
                   selected,
