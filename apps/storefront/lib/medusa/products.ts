@@ -1,18 +1,29 @@
 import type { HttpTypes } from "@medusajs/types";
 
-import { parseProductKind } from "@/lib/data/catalog";
-import type { Product } from "@/lib/data/site";
+import {
+  parseProductKind,
+  shopCategorySlugForKind,
+} from "@/lib/data/catalog";
+import { categorySlugToName, type Product } from "@/lib/data/site";
 import { sdk } from "@/lib/medusa/config";
 import { defaultCountryCode, getRegion } from "@/lib/medusa/regions";
 
+/**
+ * `*categories` (bukan `+categories`) agar relasi diekspansi penuh ke Store API —
+ * jika tidak, `categories[0].handle` sering kosong dan filter halaman kategori toko gagal.
+ */
 const PRODUCT_FIELDS =
-  "*variants.calculated_price,+variants.inventory_quantity,*variants.images,+metadata,+categories,+tags,+images,+thumbnail";
+  "*variants.calculated_price,+variants.inventory_quantity,*variants.images,+metadata,*categories,+tags,+images,+thumbnail";
 
 function mapStoreProductToProduct(p: HttpTypes.StoreProduct): Product | null {
   const kind = parseProductKind(p.metadata?.metro_kind);
   if (!kind) return null;
 
   const cat = p.categories?.[0];
+  const fallbackSlug = shopCategorySlugForKind(kind);
+  const categorySlug = cat?.handle ?? fallbackSlug;
+  const category =
+    cat?.name ?? categorySlugToName[categorySlug] ?? "Produk";
   const image =
     p.thumbnail ??
     p.images?.[0]?.url ??
@@ -22,8 +33,8 @@ function mapStoreProductToProduct(p: HttpTypes.StoreProduct): Product | null {
     medusaProductId: p.id ?? "",
     handle: p.handle ?? "",
     name: p.title,
-    category: cat?.name ?? "Produk",
-    categorySlug: cat?.handle,
+    category,
+    categorySlug,
     image,
     description: p.description ?? "",
     kind,

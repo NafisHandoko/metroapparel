@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { ProductConfigurator } from "@/components/product/product-configurator";
 import { Badge } from "@/components/ui/badge";
 import { formatIdr, minPriceForKind, tiersForKind } from "@/lib/data/catalog";
-import { site } from "@/lib/data/site";
+import { catalogListPathForCategory, site } from "@/lib/data/site";
 import { getMetroAddonOptionsForProduct } from "@/lib/medusa/metro-addon-catalog";
 import { getMetroCollarOptionsForProduct } from "@/lib/medusa/metro-collar-catalog";
 import {
@@ -48,7 +48,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     <div className="border-b border-white/10 pb-20 pt-10 sm:pt-14">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Link
-          href="/products"
+          href={catalogListPathForCategory(product.categorySlug)}
           className="text-sm font-medium text-muted transition-colors hover:text-brand"
         >
           ← Kembali ke katalog
@@ -88,7 +88,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             />
             <div className="mt-8">
               <Link
-                href="/products"
+                href={catalogListPathForCategory(product.categorySlug)}
                 className="text-sm font-medium text-muted transition-colors hover:text-brand"
               >
                 ← Lihat produk lain

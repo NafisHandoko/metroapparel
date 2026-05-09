@@ -172,7 +172,7 @@ export function HeroSection() {
             </a>
           </Button>
           <Button asChild variant="outline" size="xl" className="group min-w-[12rem]">
-            <Link href="/products" className="gap-2">
+            <Link href="/custom-jersey" className="gap-2">
               Lihat Produk
               <ArrowUpRight className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </Link>

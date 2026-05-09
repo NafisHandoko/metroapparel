@@ -7,13 +7,13 @@ import { motion } from "framer-motion";
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
-import { site } from "@/lib/data/site";
+import { primaryCatalogNav, site } from "@/lib/data/site";
 import { getWhatsAppLink } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { href: "/", label: "Beranda" },
-  { href: "/products", label: "Produk" },
+  ...primaryCatalogNav,
   { href: "/#why", label: "Keunggulan" },
   { href: "/#faq", label: "FAQ" },
 ];

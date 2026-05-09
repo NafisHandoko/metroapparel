@@ -7,7 +7,8 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: `Produk — ${site.name}`,
-  description: "Katalog jersey, PDH, polo, dan jaket custom Metro Apparel.",
+  description:
+    "Katalog lengkap Metro Apparel: Custom Jersey dan Toko Metro (training pants, jaket, polo, dll.).",
 };
 
 type PageProps = {
@@ -33,8 +34,9 @@ export default async function ProductsPage({ searchParams }: PageProps) {
           Produk custom
         </h1>
         <p className="mt-4 max-w-2xl text-muted">
-          Pilih kategori untuk menyaring siluet. Semua varian bisa dikonsultasikan
-          via WhatsApp untuk penyesuaian warna, logo sponsor, dan MOQ.
+          Saring menurut kategori toko (Custom Jersey atau Toko Metro). Untuk pintasan
+          cepat gunakan tautan di navbar. Semua varian tetap bisa dikonsultasikan via
+          WhatsApp untuk penyesuaian warna, sponsor, dan MOQ.
         </p>
         {products.length === 0 ? (
           <p className="mt-12 max-w-xl text-muted">

@@ -18,54 +18,42 @@ export const stats = [
   { value: "7–14", label: "Hari produksi rata-rata" },
 ];
 
+/** Kategori Medusa / jalur katalog toko (bukan siluet per produk). */
 export const categories = [
   {
-    slug: "jersey-atasan",
-    name: "Jersey Atasan",
-    description: "Essential, Elite, Prime — custom tim & komunitas.",
+    slug: "custom-jersey",
+    name: "Custom Jersey",
+    description:
+      "Jersey atasan & set — paket Essential–Prime dan Regular–Ultimate.",
     image:
       "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=800&q=80",
   },
   {
-    slug: "jersey-satu-set",
-    name: "Jersey Satu Set",
-    description: "Regular hingga Ultimate — full set match & esports.",
-    image:
-      "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80",
-  },
-  {
-    slug: "training-pants",
-    name: "Training Pants",
-    description: "Lotto — full print atau non printing.",
+    slug: "toko-metro",
+    name: "Toko Metro",
+    description:
+      "Training pants, jaket, short pants, polo, dan apparel katalog workshop.",
     image:
       "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&q=80",
   },
-  {
-    slug: "jaket",
-    name: "Jaket",
-    description: "Lotto — printing atau non printing + bordir.",
-    image:
-      "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=80",
-  },
-  {
-    slug: "short-pants",
-    name: "Short Pants",
-    description: "Lotto — full print atau print samping.",
-    image:
-      "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&q=80",
-  },
-  {
-    slug: "polo",
-    name: "Polo",
-    description: "CVC 24S — polo bordir untuk corporate & komunitas.",
-    image:
-      "https://images.unsplash.com/photo-1622445275571-3f7462c0068c?w=800&q=80",
-  },
-];
+] as const;
 
 export const categorySlugToName: Record<string, string> = Object.fromEntries(
   categories.map((c) => [c.slug, c.name]),
 );
+
+/** Tautan katalog di navbar — selaras dengan route `/(store)/[slug]`. */
+export const primaryCatalogNav = [
+  { href: "/custom-jersey", label: "Custom Jersey" },
+  { href: "/toko-metro", label: "Toko Metro" },
+] as const;
+
+/** Breadcrumb / “kembali” dari halaman produk ke daftar kategori yang sesuai. */
+export function catalogListPathForCategory(slug?: string | null): string {
+  if (slug === "custom-jersey") return "/custom-jersey";
+  if (slug === "toko-metro") return "/toko-metro";
+  return "/products";
+}
 
 export const whyUs = [
   {

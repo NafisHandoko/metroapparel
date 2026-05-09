@@ -64,14 +64,13 @@ function errorMessage(e: unknown): string {
  * label paket di `apps/storefront/lib/data/catalog.ts` agar configurator & varian toko selaras.
  * Kerah, oversize, dan add-on tetap dihitung di storefront (pricelist workshop), bukan di varian Medusa.
  */
-/** Mirrors storefront `lib/data/catalog.ts` tier ids, names, and base prices (IDR). */
+/**
+ * Kategori toko (Medusa) — dua jalur: custom jersey vs katalog apparel umum.
+ * Produk individual (jersey atasan, training pants, dll.) memakai `metro_kind` di metadata.
+ */
 const METRO_CATEGORIES = [
-  { name: "Jersey Atasan", handle: "jersey-atasan" },
-  { name: "Jersey Satu Set", handle: "jersey-satu-set" },
-  { name: "Training Pants", handle: "training-pants" },
-  { name: "Jaket", handle: "jaket" },
-  { name: "Short Pants", handle: "short-pants" },
-  { name: "Polo", handle: "polo" },
+  { name: "Custom Jersey", handle: "custom-jersey" },
+  { name: "Toko Metro", handle: "toko-metro" },
 ] as const;
 
 type MetroKind =
@@ -100,7 +99,7 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
   {
     handle: "jersey-atasan",
     title: "Jersey Atasan",
-    categoryHandle: "jersey-atasan",
+    categoryHandle: "custom-jersey",
     metro_kind: "jersey-top",
     description:
       "Produk utama: jersey bagian atas dengan tiga paket - Essential, Elite, dan Prime. Pilih kerah, ukuran, oversize, dan add-on; ringkasan bisa langsung dikirim ke WhatsApp.",
@@ -116,7 +115,7 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
   {
     handle: "jersey-satu-set",
     title: "Jersey Satu Set",
-    categoryHandle: "jersey-satu-set",
+    categoryHandle: "custom-jersey",
     metro_kind: "jersey-set",
     description:
       "Set lengkap atasan + celana: Regular (Basic), Standard (paling populer), Premium, dan Ultimate. Cocok untuk match day, liga, dan tim esports.",
@@ -137,7 +136,7 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
   {
     handle: "training-pants",
     title: "Training Pants",
-    categoryHandle: "training-pants",
+    categoryHandle: "toko-metro",
     metro_kind: "training-pants",
     description:
       "Celana training bahan Lotto: opsi full printing atau non printing. Pilih ukuran & add-on di bawah.",
@@ -152,7 +151,7 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
   {
     handle: "jaket",
     title: "Jaket",
-    categoryHandle: "jaket",
+    categoryHandle: "toko-metro",
     metro_kind: "jacket",
     description:
       "Jaket bahan Lotto: varian printing atau non printing + bordir. Pilih paket, ukuran, dan opsi tambahan.",
@@ -167,7 +166,7 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
   {
     handle: "short-pants",
     title: "Short Pants",
-    categoryHandle: "short-pants",
+    categoryHandle: "toko-metro",
     metro_kind: "short-pants",
     description: "Celana pendek Lotto: full printing atau print samping.",
     imageUrls: [
@@ -181,7 +180,7 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
   {
     handle: "polo",
     title: "Polo",
-    categoryHandle: "polo",
+    categoryHandle: "toko-metro",
     metro_kind: "polo",
     description:
       "Polo bordir material CVC 24S - untuk corporate, sekolah, dan komunitas.",

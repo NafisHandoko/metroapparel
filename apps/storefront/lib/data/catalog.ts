@@ -24,6 +24,14 @@ export function parseProductKind(value: unknown): ProductKind | null {
     : null;
 }
 
+/** Selaras dengan seed Medusa: dua kategori toko vs siluet `metro_kind`. */
+export type ShopCategorySlug = "custom-jersey" | "toko-metro";
+
+export function shopCategorySlugForKind(kind: ProductKind): ShopCategorySlug {
+  if (kind === "jersey-top" || kind === "jersey-set") return "custom-jersey";
+  return "toko-metro";
+}
+
 export type PricelistTier = {
   id: string;
   name: string;
