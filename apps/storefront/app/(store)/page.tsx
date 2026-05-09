@@ -20,8 +20,8 @@ export default function HomePage() {
     <>
       <HeroSection />
       <SocialProofSection />
-      <WhyUsSection />
       <FeaturedProductsSection />
+      <WhyUsSection />
       <GallerySection />
       <ClientsSection />
       <TestimonialsSection />
