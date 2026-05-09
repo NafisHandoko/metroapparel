@@ -69,9 +69,10 @@ export default async function CartPage() {
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <h1 className="font-display text-3xl tracking-tight text-foreground">Keranjang</h1>
         <p className="mt-2 text-sm text-muted">
-          Harga baris memakai total Metro (paket + opsi) yang dihitung ulang di server dan masuk ke
-          subtotal Medusa. Rincian add-on tampil di bawah setiap baris; admin dapat mengatur daftar
-          add-on dan tipe kerah global lewat Medusa Admin → Settings → Metro add-on / Metro collars.
+          Harga baris = total Metro (harga paket varian + oversize, kerah, add-on, dll.) yang
+          dihitung ulang di server dan masuk ke subtotal Medusa. Rincian tampil di bawah setiap baris;
+          admin dapat mengatur add-on dan kerah global lewat Medusa Admin → Settings → Metro add-on /
+          Metro collars.
         </p>
         <ul className="mt-10 divide-y divide-white/10 border border-white/10 rounded-xl">
           {cart.items.map((item) => (

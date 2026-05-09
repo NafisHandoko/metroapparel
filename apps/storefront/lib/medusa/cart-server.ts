@@ -76,7 +76,7 @@ export async function addVariantToMetroCart(input: {
     return { ok: false, message: "Region Medusa tidak ditemukan." };
   }
 
-  const sku = metroVariantSku(input.productHandle, input.tierId, input.size);
+  const sku = metroVariantSku(input.productHandle, input.tierId);
 
   const { products } = await sdk.client.fetch<{
     products: HttpTypes.StoreProduct[];
@@ -95,7 +95,7 @@ export async function addVariantToMetroCart(input: {
   if (!variant?.id) {
     return {
       ok: false,
-      message: `Varian tidak ditemukan (SKU: ${sku}). Sinkronkan paket & ukuran dengan Admin.`,
+      message: `Varian tidak ditemukan (SKU: ${sku}). Pastikan paket di Admin sesuai seed / katalog.`,
     };
   }
 

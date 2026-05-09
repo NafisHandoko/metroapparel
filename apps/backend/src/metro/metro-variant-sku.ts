@@ -1,8 +1,7 @@
-/** Harus sama dengan `apps/storefront/lib/medusa/sku.ts` dan seed `buildVariants`. */
-export function metroVariantSku(
-  productHandle: string,
-  tierId: string,
-  size: string,
-): string {
-  return `${productHandle}-${tierId}-${size}`.toUpperCase();
+/**
+ * SKU = satu varian per paket (`{handle}-{tierId}`), selaras dengan seed `buildVariants`
+ * dan `apps/storefront/lib/medusa/sku.ts`. Ukuran & oversize hanya di metadata baris keranjang.
+ */
+export function metroVariantSku(productHandle: string, tierId: string): string {
+  return `${productHandle}-${tierId}`.toUpperCase();
 }

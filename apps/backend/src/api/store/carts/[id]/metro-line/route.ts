@@ -87,14 +87,20 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const tierId =
     typeof body.metadata.tier_id === "string" ? body.metadata.tier_id : "";
   const size = typeof body.metadata.size === "string" ? body.metadata.size : "";
-  const expectedSku = metroVariantSku(handle, tierId, size);
+  if (!size.trim()) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "Metadata ukuran wajib diisi.",
+    );
+  }
+  const expectedSku = metroVariantSku(handle, tierId);
   if (
     !variant.sku ||
     variant.sku.toUpperCase() !== expectedSku.toUpperCase()
   ) {
     throw new MedusaError(
       MedusaError.Types.INVALID_DATA,
-      "Varian tidak cocok dengan konfigurasi (SKU).",
+      "Varian tidak cocok dengan paket yang dipilih (SKU).",
     );
   }
 

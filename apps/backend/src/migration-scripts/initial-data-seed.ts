@@ -8,7 +8,6 @@ import {
 } from "@medusajs/framework/utils";
 import {
   createApiKeysWorkflow,
-  createInventoryLevelsWorkflow,
   createProductCategoriesWorkflow,
   createProductsWorkflow,
   createRegionsWorkflow,
@@ -44,7 +43,7 @@ const METRO_PICKUP_FULFILLMENT_SET_NAME = "Metro pickup";
 const METRO_PICKUP_SERVICE_ZONE_NAME = "Zona pickup workshop";
 const METRO_STORE_NAME = "Metro Apparel";
 /** Nama opsi di DB - dipakai seed idempotent & label di toko. */
-const METRO_SHIPPING_OPTION_REGULER = "Pengiriman reguler";
+const METRO_SHIPPING_OPTION_REGULER = "Pengiriman reguler (seluruh Kota Jombang)";
 const METRO_SHIPPING_OPTION_PICKUP = "Pickup di workshop";
 
 function errorMessage(e: unknown): string {
@@ -92,8 +91,6 @@ type MetroProductSeed = {
   imageUrls: string[];
   tiers: TierRow[];
 };
-
-const SIZE_VALUES = ["S", "M", "L", "XL", "XXL", "XXXL"] as const;
 
 const METRO_PRODUCTS: MetroProductSeed[] = [
   {
@@ -191,23 +188,26 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
   },
 ];
 
+/**
+ * Satu varian per paket (harga mengikuti paket). Ukuran & oversize hanya di storefront
+ * (metadata + `computeMetroLineFromMetadata`), bukan matriks varian Medusa.
+ */
 function buildVariants(product: MetroProductSeed): {
   title: string;
   sku: string;
   options: Record<string, string>;
   prices: { amount: number; currency_code: string }[];
+  manage_inventory: boolean;
 }[] {
-  return product.tiers.flatMap((tier) =>
-    SIZE_VALUES.map((size) => ({
-      title: `${tier.name} / ${size}`,
-      sku: `${product.handle}-${tier.id}-${size}`.toUpperCase(),
-      options: {
-        Paket: tier.name,
-        Ukuran: size,
-      },
-      prices: [{ amount: tier.price, currency_code: "idr" }],
-    }))
-  );
+  return product.tiers.map((tier) => ({
+    title: tier.name,
+    sku: `${product.handle}-${tier.id}`.toUpperCase(),
+    options: {
+      Paket: tier.name,
+    },
+    prices: [{ amount: tier.price, currency_code: "idr" }],
+    manage_inventory: false,
+  }));
 }
 
 type RegionQueryRow = {
@@ -833,10 +833,7 @@ export default async function initial_data_seed({
           metro_kind: p.metro_kind,
         },
         images: p.imageUrls.map((url) => ({ url })),
-        options: [
-          { title: "Paket", values: tierNames },
-          { title: "Ukuran", values: [...SIZE_VALUES] },
-        ],
+        options: [{ title: "Paket", values: tierNames }],
         variants,
         sales_channels: [{ id: defaultSalesChannel.id }],
       };
@@ -847,57 +844,6 @@ export default async function initial_data_seed({
         products: productsInput,
       },
     });
-  }
-
-  logger.info("Seeding inventory levels...");
-
-  const { data: inventoryItems } = await query.graph({
-    entity: "inventory_item",
-    fields: ["id"],
-  });
-
-  const { data: existingLevels } = await query.graph({
-    entity: "inventory_level",
-    fields: ["id", "inventory_item_id", "location_id"],
-  });
-
-  type InvLevelRow = {
-    inventory_item_id?: string;
-    location_id?: string;
-  };
-  const alreadyPaired = new Set(
-    (existingLevels ?? [])
-      .filter(
-        (row: InvLevelRow) =>
-          row.location_id === stockLocation.id && row.inventory_item_id
-      )
-      .map((row: InvLevelRow) => row.inventory_item_id as string)
-  );
-
-  const levelsToCreate = (inventoryItems ?? []).filter(
-    (item: { id: string }) => !alreadyPaired.has(item.id)
-  );
-
-  if (levelsToCreate.length === 0) {
-    logger.info(
-      "Inventory level untuk lokasi Metro sudah lengkap; melewati createInventoryLevelsWorkflow."
-    );
-  } else {
-    try {
-      await createInventoryLevelsWorkflow(container).run({
-        input: {
-          inventory_levels: levelsToCreate.map((item: { id: string }) => ({
-            location_id: stockLocation.id,
-            stocked_quantity: 1_000_000,
-            inventory_item_id: item.id,
-          })),
-        },
-      });
-    } catch (e) {
-      logger.warn(
-        `createInventoryLevelsWorkflow: ${errorMessage(e)} (race atau duplikat parsial)`
-      );
-    }
   }
 
   logger.info(

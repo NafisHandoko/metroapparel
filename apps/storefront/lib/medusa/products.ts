@@ -13,7 +13,7 @@ import { defaultCountryCode, getRegion } from "@/lib/medusa/regions";
  * jika tidak, `categories[0].handle` sering kosong dan filter halaman kategori toko gagal.
  */
 const PRODUCT_FIELDS =
-  "*variants.calculated_price,+variants.inventory_quantity,*variants.images,+metadata,*categories,+tags,+images,+thumbnail";
+  "*variants.calculated_price,*variants.images,+metadata,*categories,+tags,+images,+thumbnail";
 
 function mapStoreProductToProduct(p: HttpTypes.StoreProduct): Product | null {
   const kind = parseProductKind(p.metadata?.metro_kind);

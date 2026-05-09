@@ -454,8 +454,9 @@ export function ProductConfigurator({
         </p>
         <p className="mt-2 font-display text-3xl text-foreground">{formatIdr(total)}</p>
         <p className="mt-2 text-xs text-muted">
-          Belum termasuk ongkir & diskon qty. Checkout web memakai harga varian Medusa (paket +
-          ukuran); kerah & add-on ikut di metadata untuk admin. Final bisa lewat chat.
+          Belum termasuk ongkir & diskon qty. Checkout web memakai harga dasar varian Medusa (per
+          paket); ukuran, oversize, kerah, dan add-on dihitung di server dari metadata. Final bisa
+          lewat chat.
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Button asChild size="xl" className="w-full sm:w-auto">

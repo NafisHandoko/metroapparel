@@ -76,8 +76,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </p>
             <p className="mt-6 text-sm text-muted">
               Hybrid: pilih konfigurasi di bawah — checkout di situs (pesanan masuk Medusa Admin)
-              atau WhatsApp bila ingin diskusi produk sekaligus. Harga varian web = paket + ukuran;
-              kerah dan add-on tercatat di metadata untuk tim.
+              atau WhatsApp bila ingin diskusi produk sekaligus. Harga di keranjang = paket (varian
+              Medusa) + oversize, kerah, dan add-on dari metadata yang divalidasi di server.
             </p>
             <ProductConfigurator
               productName={product.name}
