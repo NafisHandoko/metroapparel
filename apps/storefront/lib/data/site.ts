@@ -1,6 +1,7 @@
 /**
  * Fallback bila API Medusa tidak tersedia. Konten utama beranda & kontak diambil dari
- * Admin → Settings → Konten toko (`metro_site_content_json` di metadata store).
+ * Admin → Settings (Informasi perusahaan, Galeri, Klien, Testimoni, FAQ) — metadata
+ * `metro_site_*_json` di store; fallback `metro_site_content_json` legacy.
  */
 export const site = {
   name: "Metro Apparel",

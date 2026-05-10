@@ -33,9 +33,8 @@ import {
   serializeMetroCollarRulesPayload,
 } from "../metro/metro-collar-rules";
 import {
-  METRO_SITE_CONTENT_METADATA_KEY,
-  defaultMetroSiteContent,
-  serializeMetroSiteContent,
+  hasAnySiteContentMetadata,
+  splitSiteContentDefaultsForSeed,
 } from "../metro/metro-site-content";
 
 const COUNTRY_ID = "id";
@@ -537,8 +536,7 @@ export default async function initial_data_seed({
     metroStoreRow?.id &&
     metroStoreRow.metadata?.[METRO_COLLAR_RULES_METADATA_KEY] == null;
   const needsSiteContent =
-    metroStoreRow?.id &&
-    metroStoreRow.metadata?.[METRO_SITE_CONTENT_METADATA_KEY] == null;
+    metroStoreRow?.id && !hasAnySiteContentMetadata(metroStoreRow.metadata);
   if (needsAddonRules || needsCollarRules || needsSiteContent) {
     const base = { ...(metroStoreRow!.metadata ?? {}) };
     if (needsAddonRules) {
@@ -552,9 +550,7 @@ export default async function initial_data_seed({
       );
     }
     if (needsSiteContent) {
-      base[METRO_SITE_CONTENT_METADATA_KEY] = serializeMetroSiteContent(
-        defaultMetroSiteContent(),
-      );
+      Object.assign(base, splitSiteContentDefaultsForSeed());
     }
     await updateStoresWorkflow(container).run({
       input: {
@@ -570,7 +566,7 @@ export default async function initial_data_seed({
     }
     if (needsSiteContent) {
       logger.info(
-        "Metadata konten toko (metro_site_content_json) diset ke default seed.",
+        "Metadata konten toko (metro_site_*_json per bagian) diset ke default seed.",
       );
     }
   }

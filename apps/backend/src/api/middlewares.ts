@@ -15,7 +15,31 @@ export default defineMiddlewares({
       ],
     },
     {
-      matcher: "/admin/metro-site-content",
+      matcher: "/admin/metro-site-company",
+      middlewares: [
+        authenticate("user", ["session", "bearer", "api-key"]),
+      ],
+    },
+    {
+      matcher: "/admin/metro-site-gallery",
+      middlewares: [
+        authenticate("user", ["session", "bearer", "api-key"]),
+      ],
+    },
+    {
+      matcher: "/admin/metro-site-clients",
+      middlewares: [
+        authenticate("user", ["session", "bearer", "api-key"]),
+      ],
+    },
+    {
+      matcher: "/admin/metro-site-testimonials",
+      middlewares: [
+        authenticate("user", ["session", "bearer", "api-key"]),
+      ],
+    },
+    {
+      matcher: "/admin/metro-site-faq",
       middlewares: [
         authenticate("user", ["session", "bearer", "api-key"]),
       ],

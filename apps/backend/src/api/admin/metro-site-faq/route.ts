@@ -4,11 +4,11 @@ import { MedusaError } from "@medusajs/framework/utils";
 
 import { getPrimaryStoreRow } from "../../../metro/metro-store-addons";
 import {
-  METRO_SITE_CONTENT_METADATA_KEY,
-  hasSavedMetroSiteContent,
-  mergeMetroSiteContent,
-  metroSiteContentV1Schema,
-  serializeMetroSiteContent,
+  METRO_SITE_FAQ_METADATA_KEY,
+  isMetroSiteFaqSectionDefault,
+  metroSiteFaqPostSchema,
+  resolveMetroSiteContent,
+  serializeMetroSiteFaq,
 } from "../../../metro/metro-site-content";
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
@@ -16,17 +16,16 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   if (!store) {
     throw new MedusaError(MedusaError.Types.NOT_FOUND, "No store found");
   }
-  const raw = store.metadata?.[METRO_SITE_CONTENT_METADATA_KEY];
-  const content = mergeMetroSiteContent(raw);
+  const content = resolveMetroSiteContent(store.metadata);
   res.status(200).json({
     store_id: store.id,
-    content,
-    is_default_template: !hasSavedMetroSiteContent(store.metadata),
+    faq: content.faq,
+    is_default_template: isMetroSiteFaqSectionDefault(store.metadata),
   });
 }
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
-  const parsed = metroSiteContentV1Schema.safeParse(req.body);
+  const parsed = metroSiteFaqPostSchema.safeParse(req.body);
   if (!parsed.success) {
     const flat = parsed.error.flatten();
     const fieldMsg = Object.entries(flat.fieldErrors)
@@ -46,7 +45,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
   const mergedMetadata = {
     ...(store.metadata ?? {}),
-    [METRO_SITE_CONTENT_METADATA_KEY]: serializeMetroSiteContent(parsed.data),
+    [METRO_SITE_FAQ_METADATA_KEY]: serializeMetroSiteFaq(parsed.data.faq),
   };
 
   await updateStoresWorkflow(req.scope).run({
@@ -56,5 +55,6 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     },
   });
 
-  res.status(200).json({ ok: true, content: parsed.data });
+  const content = resolveMetroSiteContent(mergedMetadata);
+  res.status(200).json({ ok: true, faq: content.faq });
 }
