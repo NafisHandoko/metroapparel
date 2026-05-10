@@ -7,6 +7,7 @@ import {
   Heading,
   Input,
   Label,
+  Select,
   Text,
   Textarea,
   toast,
@@ -14,6 +15,12 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type ScopeMode = "all" | "only" | "except";
+
+const PRODUCT_SCOPE_OPTIONS: { value: ScopeMode; label: string }[] = [
+  { value: "all", label: "Semua produk (default)" },
+  { value: "only", label: "Hanya produk terpilih" },
+  { value: "except", label: "Semua kecuali produk terpilih" },
+];
 
 type LinkedProduct = { id: string; title: string };
 
@@ -317,22 +324,27 @@ const MetroAddonsSettingsPage = () => {
                   </div>
                   <div className="flex flex-col gap-2">
                     <Label htmlFor={`scope-${i}`}>Berlaku untuk produk</Label>
-                    <select
-                      id={`scope-${i}`}
-                      className="bg-ui-bg-field border-ui-border-base text-ui-fg-base rounded-md border px-3 py-2 text-sm"
+                    <Select
                       value={row.scope}
-                      onChange={(e) =>
+                      onValueChange={(v) =>
                         patchRow(i, {
-                          scope: e.target.value as ScopeMode,
+                          scope: v as ScopeMode,
                           linked_products:
-                            e.target.value === "all" ? [] : row.linked_products,
+                            v === "all" ? [] : row.linked_products,
                         })
                       }
                     >
-                      <option value="all">Semua produk (default)</option>
-                      <option value="only">Hanya produk terpilih</option>
-                      <option value="except">Semua kecuali produk terpilih</option>
-                    </select>
+                      <Select.Trigger id={`scope-${i}`} className="w-full">
+                        <Select.Value placeholder="Pilih cakupan produk" />
+                      </Select.Trigger>
+                      <Select.Content>
+                        {PRODUCT_SCOPE_OPTIONS.map((opt) => (
+                          <Select.Item key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
