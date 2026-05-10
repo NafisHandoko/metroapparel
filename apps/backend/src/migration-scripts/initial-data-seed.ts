@@ -18,6 +18,7 @@ import {
   createTaxRegionsWorkflow,
   linkSalesChannelsToApiKeyWorkflow,
   linkSalesChannelsToStockLocationWorkflow,
+  updateProductsWorkflow,
   updateStoresWorkflow,
 } from "@medusajs/medusa/core-flows";
 
@@ -60,8 +61,9 @@ function errorMessage(e: unknown): string {
 
 /**
  * Seed katalog: kategori toko (Custom Jersey / Toko Metro) + produk/varian/harga di Medusa.
- * Nama nilai opsi & harga seed boleh diselaraskan dengan `apps/storefront/lib/data/catalog.ts`
- * untuk dokumentasi; storefront memakai data Admin/Medusa apa adanya.
+ * Nama nilai opsi & harga seed diselaraskan dengan `apps/storefront/lib/data/catalog.ts`.
+ * Setelah produk ada, bila `metadata.metro_option_details_json` masih kosong, seed menulis
+ * bullet fitur per nilai opsi «Paket» (salinan literal array `features` tier dari catalog).
  */
 const METRO_CATEGORIES = [
   { name: "Custom Jersey", handle: "custom-jersey" },
@@ -168,6 +170,173 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
     tiers: [{ id: "polo-bordir", name: "Polo bordir", price: 90_000 }],
   },
 ];
+
+/** Sama key dengan admin widget & storefront `metro-option-details.ts`. */
+const METRO_OPTION_DETAILS_JSON_KEY = "metro_option_details_json";
+
+/**
+ * Bullet per nilai opsi "Paket" — salinan literal dari `apps/storefront/lib/data/catalog.ts`
+ * (`jerseyTopTiers`, `jerseySetTiers`, `trainingPantsTiers`, `jacketTiers`, `shortPantsTiers`, `poloTiers`).
+ * Key luar = `MetroProductSeed.handle`; key dalam = string nilai opsi seed (nama tier).
+ */
+const METRO_SEED_PACKAGE_FEATURES_BY_PRODUCT_HANDLE: Record<
+  string,
+  Record<string, string[]>
+> = {
+  "jersey-atasan": {
+    Essential: [
+      "Atasan print depan",
+      "Logo, nama, dan nomor punggung DTF/Poliflex",
+      "Kerah basic",
+    ],
+    Elite: [
+      "Atasan full printing",
+      "Kerah basic",
+      "Pola potongan basic",
+      "Bahan premium",
+    ],
+    Prime: [
+      "Atasan full printing",
+      "Kerah variatif",
+      "Pola potongan variatif",
+      "Bahan premium",
+    ],
+  },
+  "jersey-satu-set": {
+    "Regular (Basic)": [
+      "DTF/Poliflex sublim",
+      "Dryfit standard sport",
+      "Atasan & bawahan non printing",
+      "Nama, nomor, dan logo sablon DTF/Poliflex",
+      "Dryfit basic milano",
+      "Kerah basic V-neck / O-neck",
+    ],
+    Standard: [
+      "Printing atasan",
+      "Dryfit premium",
+      "Atasan full printing",
+      "Bawahan non printing",
+      "Basic kerah",
+      "Premium dryfit",
+    ],
+    "Premium (Advanced)": [
+      "Full printing atas bawah",
+      "Kerah variatif",
+      "Premium dryfit",
+      "Pola variatif & double stitch",
+      "Bahan premium",
+    ],
+    "Ultimate (Professional)": [
+      "Full printing atas bawah",
+      "Kerah variatif",
+      "Premium dryfit",
+      "Kerah, atasan, dan bawahan pola variatif",
+      "3D logo",
+      "Kain emboss/jacquard & double stitch",
+      "Foto studio",
+    ],
+  },
+  "training-pants": {
+    "Full printing": ["Full printing", "Material: Lotto"],
+    "Non printing": ["Non printing", "Material: Lotto"],
+  },
+  jaket: {
+    Printing: ["Printing", "Material: Lotto"],
+    "Non printing + bordir": ["Non printing + bordir", "Material: Lotto"],
+  },
+  "short-pants": {
+    "Full printing": ["Full printing", "Material: Lotto"],
+    "Print samping": ["Print samping", "Material: Lotto"],
+  },
+  polo: {
+    "Polo bordir": ["Polo bordir", "Material: CVC 24S"],
+  },
+};
+
+type ProductOptionRow = { id?: string; title?: string | null };
+type ProductForOptionDetailsSeed = {
+  id: string;
+  handle?: string | null;
+  metadata?: Record<string, unknown> | null;
+  options?: ProductOptionRow[] | null;
+};
+
+async function seedMetroOptionDetailsIfMissing(
+  container: MedusaContainer,
+  query: {
+    graph: (args: {
+      entity: string;
+      fields: string[];
+      filters?: Record<string, unknown>;
+    }) => Promise<{ data?: unknown }>;
+  },
+  logger: { info: (msg: string) => void; warn: (msg: string) => void }
+) {
+  const updates: { id: string; metadata: Record<string, unknown> }[] = [];
+
+  for (const handle of METRO_PRODUCTS.map((p) => p.handle)) {
+    const featuresByValue =
+      METRO_SEED_PACKAGE_FEATURES_BY_PRODUCT_HANDLE[handle];
+    if (!featuresByValue) continue;
+
+    const { data: products } = await query.graph({
+      entity: "product",
+      fields: ["id", "handle", "metadata", "options.id", "options.title"],
+      filters: { handle },
+    });
+    const row = products?.[0] as ProductForOptionDetailsSeed | undefined;
+    if (!row?.id) continue;
+
+    const existing = row.metadata?.[METRO_OPTION_DETAILS_JSON_KEY];
+    if (existing != null && String(existing).trim() !== "") continue;
+
+    const paketOpt = row.options?.find((o) => o.title?.trim() === "Paket");
+    if (!paketOpt?.id) {
+      logger.warn(
+        `Seed ${METRO_OPTION_DETAILS_JSON_KEY}: produk "${handle}" tanpa opsi "Paket".`
+      );
+      continue;
+    }
+
+    const doc = {
+      v: 1 as const,
+      byOption: {
+        [paketOpt.id]: { ...featuresByValue },
+      },
+    };
+    const prev =
+      row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+        ? { ...row.metadata }
+        : {};
+    updates.push({
+      id: row.id,
+      metadata: {
+        ...prev,
+        [METRO_OPTION_DETAILS_JSON_KEY]: JSON.stringify(doc),
+      },
+    });
+  }
+
+  if (updates.length === 0) {
+    logger.info(
+      `Metro seed: ${METRO_OPTION_DETAILS_JSON_KEY} sudah ada pada semua produk katalog — dilewati.`
+    );
+    return;
+  }
+
+  try {
+    await updateProductsWorkflow(container).run({
+      input: { products: updates },
+    });
+    logger.info(
+      `Metro seed: ${METRO_OPTION_DETAILS_JSON_KEY} ditulis untuk ${updates.length} produk (fitur tier = catalog).`
+    );
+  } catch (e) {
+    logger.warn(
+      `updateProductsWorkflow (${METRO_OPTION_DETAILS_JSON_KEY}): ${errorMessage(e)}`
+    );
+  }
+}
 
 /** Satu varian per kombinasi nilai opsi (mis. satu opsi "Paket" → satu varian per tier). */
 function buildVariants(product: MetroProductSeed): {
@@ -820,6 +989,8 @@ export default async function initial_data_seed({
       },
     });
   }
+
+  await seedMetroOptionDetailsIfMissing(container, query, logger);
 
   logger.info(
     `Metro seed complete. Publishable key id: ${publishableApiKey.id} (link in Admin API keys).`
