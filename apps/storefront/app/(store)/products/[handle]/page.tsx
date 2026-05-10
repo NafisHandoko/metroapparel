@@ -82,10 +82,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
             <p className="mt-4 text-base leading-relaxed text-muted sm:text-lg">
               {summary.description}
             </p>
-            <p className="mt-6 text-sm text-muted">
-              Pilih varian (harga dari Medusa), kerah & add-on bila tersedia. Checkout memakai total
-              Metro yang divalidasi di server; rincian harga tercatat di keranjang.
-            </p>
             <MedusaVariantConfigurator
               product={raw}
               addonOptions={addonOptions}

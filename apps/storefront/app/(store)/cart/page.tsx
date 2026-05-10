@@ -140,11 +140,6 @@ export default async function CartPage() {
     <div className="border-b border-white/10 pb-24 pt-12">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <h1 className="font-display text-3xl tracking-tight text-foreground">Keranjang</h1>
-        <p className="mt-2 text-sm text-muted">
-          Harga baris = total Metro (varian Medusa + kerah, oversize, add-on, dll.) yang dihitung di
-          server. Rincian per baris tampil di bawah bila tersedia (
-          <code className="text-foreground/90">metro_price_breakdown</code>).
-        </p>
         <ul className="mt-10 divide-y divide-white/10 border border-white/10 rounded-xl">
           {cart.items.map((item) => (
             <li

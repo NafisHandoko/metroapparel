@@ -43,11 +43,6 @@ export function ClientsSection() {
         <p className="text-center text-xs font-semibold uppercase tracking-[0.35em] text-muted">
           Dipercaya organisasi & komunitas
         </p>
-        {!reduce ? (
-          <p className="mt-2 text-center text-[11px] text-muted/80">
-            Klik-tahan dan geser untuk menggeser daftar klien.
-          </p>
-        ) : null}
         <InfiniteMarquee
           reducedMotion={!!reduce}
           ariaLabel="Logo klien, dapat diseret horizontal"

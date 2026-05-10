@@ -1,12 +1,12 @@
 export const site = {
   name: "Metro Apparel",
   tagline: "Custom jersey & apparel produksi lokal, kualitas premium.",
-  address: "Jl. Industri Raya No. 88, Tangerang Selatan 15314, Indonesia",
+  address: "Jl. Raya Mojowarno, Bedok, Bulurejo, Kec. Diwek, Kabupaten Jombang, Jawa Timur 61471",
   email: "halo@metroapparel.id",
   phoneDisplay: "+62 812-3456-7890",
   social: {
-    instagram: "https://instagram.com/metroapparel",
-    tiktok: "https://tiktok.com/@metroapparel",
+    instagram: "https://www.instagram.com/metro_apprl",
+    tiktok: "",
   },
 };
 

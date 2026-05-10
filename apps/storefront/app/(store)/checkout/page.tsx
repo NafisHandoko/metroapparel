@@ -27,10 +27,6 @@ export default async function CheckoutPage() {
           ← Kembali ke keranjang
         </Link>
         <h1 className="mt-6 font-display text-3xl tracking-tight text-foreground">Checkout</h1>
-        <p className="mt-3 max-w-xl text-sm text-muted">
-          Hybrid: pesanan masuk ke Medusa Admin seperti toko standar. Anda tetap bisa chat produk &
-          revisi lewat WhatsApp kapan saja.
-        </p>
         <div className="mt-10 rounded-xl border border-white/10 bg-surface/50 p-6 sm:p-8">
           <MetroCheckoutForm />
         </div>

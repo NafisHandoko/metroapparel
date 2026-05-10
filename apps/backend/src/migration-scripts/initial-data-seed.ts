@@ -611,9 +611,9 @@ export default async function initial_data_seed({
           {
             name: METRO_WORKSHOP_LOCATION_NAME,
             address: {
-              city: "Tangerang Selatan",
+              city: "Jombang",
               country_code: "ID",
-              address_1: "Jl. Industri Raya No. 88",
+              address_1: "Jl. Raya Mojowarno, Bedok, Bulurejo, Kec. Diwek, Kabupaten Jombang, Jawa Timur 61471",
             },
           },
         ],
@@ -823,7 +823,7 @@ export default async function initial_data_seed({
       shipping_profile_id: shippingProfile.id,
       type: {
         label: "Reguler",
-        description: "Kurir ke seluruh Indonesia.",
+        description: "Kurir ke seluruh Kota Jombang.",
         code: "standard",
       },
       prices: [

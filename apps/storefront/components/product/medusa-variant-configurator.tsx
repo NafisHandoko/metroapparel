@@ -322,11 +322,6 @@ export function MedusaVariantConfigurator({
             <h2 className="font-display text-xl tracking-wide text-foreground">
               {opt.title}
             </h2>
-            <p className="mt-1 text-xs text-muted">
-              Urutan nilai: termurah ke termahal (kiri ke kanan). Harga mengikuti varian Medusa
-              untuk kombinasi opsi saat ini. Poin di bawahnya diisi dari Admin → produk ini → blok
-              «Metro — detail per nilai opsi».
-            </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {valuesByPrice.map((v) => {
                 const amt = priceForOptionValue(
@@ -445,9 +440,6 @@ export function MedusaVariantConfigurator({
         <h2 className="font-display text-xl tracking-wide text-foreground">
           Biaya tambahan & opsi
         </h2>
-        <p className="mt-1 text-sm text-muted">
-          Add-on dari Medusa Admin → Settings → Metro add-on (filter per produk).
-        </p>
         <div className="mt-4 space-y-3">
           {addonOptions.map((opt) => {
             if (opt.group === "fabric-extra") return null;
@@ -565,10 +557,6 @@ export function MedusaVariantConfigurator({
           Estimasi
         </p>
         <p className="mt-2 font-display text-3xl text-foreground">{formatIdr(total)}</p>
-        <p className="mt-2 text-xs text-muted">
-          Harga dasar = varian Medusa; kerah, oversize, dan add-on ditambahkan lalu divalidasi di
-          server saat «Tambah ke keranjang» (baris `metro_price_breakdown` di keranjang).
-        </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Button asChild size="xl" className="w-full sm:w-auto">
             <a href={waHref} target="_blank" rel="noreferrer">

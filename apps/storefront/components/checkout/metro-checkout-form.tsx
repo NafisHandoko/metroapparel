@@ -107,7 +107,7 @@ export function MetroCheckoutForm() {
         <form ref={formRef} onSubmit={onPrepare} className="space-y-4">
           <p className="text-sm text-muted">
             Langkah 1 — isi kontak & alamat (Indonesia), lalu cek opsi pengiriman atau pickup.
-            Pembayaran manual / konfirmasi admin (provider sistem Medusa).
+            Pembayaran manual / konfirmasi admin.
           </p>
           <div>
             <label htmlFor="email" className={labelClass}>
@@ -203,9 +203,6 @@ export function MetroCheckoutForm() {
           {shippingOptions && shippingOptions.length > 0 ? (
             <fieldset className="space-y-3 rounded-lg border border-white/10 p-4">
               <legend className={labelClass}>Pengiriman atau ambil sendiri</legend>
-              <p className="text-xs text-muted">
-                Pilih satu. Ongkir di bawah mengikuti pengaturan Medusa untuk keranjang ini.
-              </p>
               <div className="space-y-2">
                 {shippingOptions.map((o, i) => (
                   <label
@@ -253,8 +250,7 @@ export function MetroCheckoutForm() {
       ) : (
         <div className="space-y-4">
           <p className="text-sm text-muted">
-            Langkah 2 — pastikan data sudah benar di keranjang, lalu buat pesanan. Order akan muncul
-            di Medusa Admin; tim dapat menghubungi Anda untuk pembayaran & detail produksi.
+            Langkah 2 — pastikan data sudah benar di keranjang, lalu buat pesanan. Order akan diterima oleh Admin; tim dapat menghubungi Anda untuk pembayaran & detail produksi.
           </p>
           {error ? <p className="text-sm text-red-400">{error}</p> : null}
           <Button type="button" onClick={onComplete} disabled={pending} size="lg">

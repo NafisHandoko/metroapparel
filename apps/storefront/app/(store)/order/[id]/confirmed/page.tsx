@@ -28,9 +28,8 @@ export default async function OrderConfirmedPage({ params }: Props) {
           Pesanan telah dibuat
         </h1>
         <p className="mt-4 text-sm text-muted">
-          ID pesanan Medusa:{" "}
-          <span className="font-mono text-foreground">{id}</span>. Tim Anda dapat melihat detail di
-          Admin Medusa. Simpan ID ini untuk komunikasi dengan admin.
+          ID pesanan Metro:{" "}
+          <span className="font-mono text-foreground">{id}</span>. Simpan ID ini untuk komunikasi dengan admin.
         </p>
         <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Button asChild size="lg">
