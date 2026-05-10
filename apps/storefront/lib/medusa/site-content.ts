@@ -31,6 +31,7 @@ function fallbackSiteContent(): MetroSiteContentV1 {
       },
     },
     gallery: [...galleryImages],
+    heroBackgroundUrls: [],
     clients: clientLogos.map((c) => ({ name: c.name, abbr: c.abbr })),
     testimonials: testimonials.map((t) => ({ ...t })),
     faq: faqItems.map((f) => ({ ...f })),

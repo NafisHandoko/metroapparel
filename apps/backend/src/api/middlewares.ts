@@ -27,6 +27,12 @@ export default defineMiddlewares({
       ],
     },
     {
+      matcher: "/admin/metro-site-hero",
+      middlewares: [
+        authenticate("user", ["session", "bearer", "api-key"]),
+      ],
+    },
+    {
       matcher: "/admin/metro-site-clients",
       middlewares: [
         authenticate("user", ["session", "bearer", "api-key"]),

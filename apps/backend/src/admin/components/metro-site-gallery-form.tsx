@@ -1,10 +1,24 @@
 import { DotsSix, Trash } from "@medusajs/icons";
 import { Button, Input, Label, Text, toast } from "@medusajs/ui";
-import { useRef, useState } from "react";
+import {
+  useRef,
+  useState,
+  type DragEvent,
+  type ReactNode,
+} from "react";
 
 import { defaultMetroSiteContent } from "../../metro/metro-site-content";
 
 const MAX_GALLERY_UPLOAD_BYTES = 8 * 1024 * 1024;
+
+const DEFAULT_HELP = (
+  <>
+    Atur urutan gambar seperti di etalase: <strong>Unggah</strong> ke server Medusa, atau
+    <strong> tambah dari URL</strong> (mis. Unsplash). <strong>Tarik area gambar</strong> (ikon titik
+    kiri atas) untuk mengurut ulang — urutan di sini sama dengan di storefront. Hapus dengan
+    tombol sampah. Klik <strong>Simpan</strong> di atas / bawah halaman ini setelah selesai.
+  </>
+);
 
 type UploadFileRow = {
   id?: string;
@@ -42,9 +56,24 @@ function reorderGalleryItems(
 export type MetroSiteGalleryFormProps = {
   urls: string[];
   onUrlsChange: (urls: string[]) => void;
+  /** Default 40 (galeri). Hero pakai 8. */
+  maxUrls?: number;
+  /** Default 1 — tidak boleh hapus sampai di bawah ambang ini. */
+  minUrls?: number;
+  /** Teks bantuan di atas form (default untuk galeri). */
+  helpText?: ReactNode;
+  /** Toast setelah upload batch (setelah jumlah file di-unggah). */
+  uploadSuccessToastHint?: string;
 };
 
-export function MetroSiteGalleryForm({ urls, onUrlsChange }: MetroSiteGalleryFormProps) {
+export function MetroSiteGalleryForm({
+  urls,
+  onUrlsChange,
+  maxUrls = 40,
+  minUrls = 1,
+  helpText = DEFAULT_HELP,
+  uploadSuccessToastHint = "Klik Simpan bagian galeri agar tersimpan di toko.",
+}: MetroSiteGalleryFormProps) {
   const galleryFileInputRef = useRef<HTMLInputElement>(null);
   const galleryDragFromRef = useRef<number | null>(null);
   const [uploadingGallery, setUploadingGallery] = useState(false);
@@ -70,10 +99,17 @@ export function MetroSiteGalleryForm({ urls, onUrlsChange }: MetroSiteGalleryFor
       }
     }
 
+    const room = maxUrls - urls.length;
+    if (room <= 0) {
+      toast.error(`Maksimum ${maxUrls} gambar — hapus beberapa dulu.`);
+      return;
+    }
+
     setUploadingGallery(true);
     try {
       const fd = new FormData();
-      for (const f of files) {
+      const capped = files.slice(0, room);
+      for (const f of capped) {
         fd.append("files", f);
       }
       const res = await fetch("/admin/uploads", {
@@ -91,9 +127,7 @@ export function MetroSiteGalleryForm({ urls, onUrlsChange }: MetroSiteGalleryFor
         throw new Error("Upload berhasil tetapi tidak ada URL file di respons.");
       }
       onUrlsChange([...urls, ...newUrls]);
-      toast.success(
-        `${newUrls.length} gambar diunggah. Klik Simpan bagian galeri agar tersimpan di toko.`,
-      );
+      toast.success(`${newUrls.length} gambar diunggah. ${uploadSuccessToastHint}`);
     } catch (e) {
       console.error(e);
       toast.error(
@@ -110,8 +144,8 @@ export function MetroSiteGalleryForm({ urls, onUrlsChange }: MetroSiteGalleryFor
   };
 
   const removeGalleryAt = (index: number) => {
-    if (urls.length <= 1) {
-      toast.error("Minimal satu gambar di galeri.");
+    if (urls.length <= minUrls) {
+      toast.error(`Minimal ${minUrls} gambar.`);
       return;
     }
     onUrlsChange(urls.filter((_, i) => i !== index));
@@ -124,6 +158,10 @@ export function MetroSiteGalleryForm({ urls, onUrlsChange }: MetroSiteGalleryFor
       toast.error("URL harus diawali http:// atau https://");
       return;
     }
+    if (urls.length >= maxUrls) {
+      toast.error(`Maksimum ${maxUrls} gambar.`);
+      return;
+    }
     if (urls.includes(raw)) {
       setGalleryUrlDraft("");
       toast.info("URL ini sudah ada di galeri.");
@@ -131,10 +169,10 @@ export function MetroSiteGalleryForm({ urls, onUrlsChange }: MetroSiteGalleryFor
     }
     onUrlsChange([...urls, raw]);
     setGalleryUrlDraft("");
-    toast.success("Gambar ditambahkan dari URL. Klik Simpan untuk menyimpan.");
+    toast.success(`Gambar ditambahkan dari URL. ${uploadSuccessToastHint}`);
   };
 
-  const handleGalleryDragStart = (e: React.DragEvent, index: number) => {
+  const handleGalleryDragStart = (e: DragEvent, index: number) => {
     galleryDragFromRef.current = index;
     setDraggingGalleryIndex(index);
     e.dataTransfer.effectAllowed = "move";
@@ -147,7 +185,7 @@ export function MetroSiteGalleryForm({ urls, onUrlsChange }: MetroSiteGalleryFor
     setDragOverGalleryIndex(null);
   };
 
-  const handleGalleryDragOver = (e: React.DragEvent, index: number) => {
+  const handleGalleryDragOver = (e: DragEvent, index: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     const from = galleryDragFromRef.current;
@@ -156,13 +194,13 @@ export function MetroSiteGalleryForm({ urls, onUrlsChange }: MetroSiteGalleryFor
     }
   };
 
-  const handleGalleryDragLeave = (e: React.DragEvent) => {
+  const handleGalleryDragLeave = (e: DragEvent) => {
     const next = e.relatedTarget as Node | null;
     if (next && e.currentTarget.contains(next)) return;
     setDragOverGalleryIndex(null);
   };
 
-  const handleGalleryDrop = (e: React.DragEvent, toIndex: number) => {
+  const handleGalleryDrop = (e: DragEvent, toIndex: number) => {
     e.preventDefault();
     const fromIndex = Number.parseInt(e.dataTransfer.getData("text/plain"), 10);
     if (Number.isNaN(fromIndex) || fromIndex === toIndex) {
@@ -180,10 +218,7 @@ export function MetroSiteGalleryForm({ urls, onUrlsChange }: MetroSiteGalleryFor
   return (
     <div className="space-y-4">
       <Text size="small" className="text-ui-fg-muted">
-        Atur urutan gambar seperti di etalase: <strong>Unggah</strong> ke server Medusa, atau
-        <strong> tambah dari URL</strong> (mis. Unsplash). <strong>Tarik area gambar</strong> (ikon titik
-        kiri atas) untuk mengurut ulang — urutan di sini sama dengan di storefront. Hapus dengan
-        tombol sampah. Klik <strong>Simpan</strong> di atas / bawah halaman ini setelah selesai.
+        {helpText}
       </Text>
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="flex flex-wrap items-center gap-2">

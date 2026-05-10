@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import {
   motion,
@@ -18,8 +17,12 @@ import { Button } from "@/components/ui/button";
 import { useSiteContent } from "@/components/site-content-provider";
 import { getWhatsAppLink } from "@/lib/whatsapp";
 
-const heroImage =
-  "https://images.unsplash.com/photo-1517649763962-0c62306601b7?w=1920&q=85";
+/** Durasi zoom-in halus per slide (ms). */
+const HERO_ZOOM_MS = 8200;
+/** Jeda total antar pergantian slide = zoom + sedikit hold sebelum crossfade berikutnya. */
+const HERO_SLIDE_INTERVAL_MS = HERO_ZOOM_MS + 600;
+/** Durasi crossfade (detik) — dipakai Framer + timeout outgoing layer. */
+const HERO_CROSSFADE_SEC = 0.75;
 
 const textContainer = {
   hidden: {},
@@ -41,8 +44,60 @@ const textItem = {
 };
 
 export function HeroSection() {
-  const { company } = useSiteContent();
+  const { company, heroBackgroundUrls } = useSiteContent();
   const reduce = useReducedMotion();
+  /** Lapisan bawah = slide saat ini; lapisan atas memudar menampilkan slide berikutnya (dua lapisan — loop tanpa jeda hitam). */
+  const [bottomIndex, setBottomIndex] = React.useState(0);
+  const [overlayVisible, setOverlayVisible] = React.useState(false);
+
+  const rotationImages = React.useMemo(() => {
+    return (heroBackgroundUrls ?? [])
+      .map((u) => (typeof u === "string" ? u.trim() : ""))
+      .filter(Boolean);
+  }, [heroBackgroundUrls]);
+
+  const rotationKey = rotationImages.join("\u0000");
+  const heroCount = rotationImages.length;
+  const hasHeroImages = heroCount > 0;
+  const nextIndex = hasHeroImages ? (bottomIndex + 1) % heroCount : 0;
+
+  React.useEffect(() => {
+    setBottomIndex(0);
+    setOverlayVisible(false);
+  }, [rotationKey]);
+
+  React.useEffect(() => {
+    if (reduce || !hasHeroImages) return;
+    for (const src of rotationImages) {
+      const img = new window.Image();
+      img.decoding = "async";
+      img.src = src;
+    }
+  }, [reduce, hasHeroImages, rotationImages]);
+
+  React.useEffect(() => {
+    if (reduce || heroCount < 2) return;
+    let cancelled = false;
+    void (async () => {
+      while (!cancelled) {
+        await new Promise<void>((r) => {
+          window.setTimeout(r, HERO_SLIDE_INTERVAL_MS);
+        });
+        if (cancelled) break;
+        setOverlayVisible(true);
+        await new Promise<void>((r) => {
+          window.setTimeout(r, HERO_CROSSFADE_SEC * 1000);
+        });
+        if (cancelled) break;
+        setBottomIndex((i) => (i + 1) % heroCount);
+        setOverlayVisible(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [reduce, heroCount, rotationKey]);
+
   const textContainerVariants = reduce
     ? { hidden: {}, visible: { transition: { staggerChildren: 0, delayChildren: 0 } } }
     : textContainer;
@@ -82,14 +137,64 @@ export function HeroSection() {
         className="absolute inset-0 will-change-transform"
         style={{ y: imageYSpring }}
       >
-        <Image
-          src={heroImage}
-          alt="Tim dengan jersey custom"
-          fill
-          priority
-          className="object-cover object-center"
-          sizes="100vw"
-        />
+        <div className="relative h-full min-h-[85vh] w-full bg-black">
+          {hasHeroImages ? (
+            reduce ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element -- URL dari admin (domain bebas). */}
+                <img
+                  src={rotationImages[0]}
+                  alt="Tim dengan jersey custom"
+                  className="absolute inset-0 h-full w-full object-cover object-center"
+                  decoding="async"
+                  fetchPriority="high"
+                />
+              </>
+            ) : (
+              <div className="absolute inset-0">
+                <motion.div
+                  key={`hero-bottom-${bottomIndex}`}
+                  className="absolute inset-0 z-[1] overflow-hidden will-change-transform"
+                  initial={{ scale: 1 }}
+                  animate={{ scale: 1.12 }}
+                  transition={{
+                    duration: HERO_ZOOM_MS / 1000,
+                    ease: [0.22, 0.06, 0.36, 1],
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- URL dari admin (domain bebas). */}
+                  <img
+                    src={rotationImages[bottomIndex]}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover object-center"
+                    decoding="async"
+                    fetchPriority={bottomIndex === 0 ? "high" : "auto"}
+                  />
+                </motion.div>
+                {heroCount >= 2 ? (
+                  <motion.div
+                    className="pointer-events-none absolute inset-0 z-[2] overflow-hidden will-change-opacity"
+                    initial={false}
+                    animate={{ opacity: overlayVisible ? 1 : 0 }}
+                    transition={{
+                      duration: overlayVisible ? HERO_CROSSFADE_SEC : 0,
+                      ease: [0.4, 0, 0.2, 1],
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- URL dari admin (domain bebas). */}
+                    <img
+                      src={rotationImages[nextIndex]}
+                      alt=""
+                      className="absolute inset-0 h-full w-full object-cover object-center"
+                      decoding="async"
+                      fetchPriority="auto"
+                    />
+                  </motion.div>
+                ) : null}
+              </div>
+            )
+          ) : null}
+        </div>
       </motion.div>
       <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/40" />
       <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/30" />

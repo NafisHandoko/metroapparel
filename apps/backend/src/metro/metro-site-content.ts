@@ -12,6 +12,7 @@ export const METRO_SITE_GALLERY_METADATA_KEY = "metro_site_gallery_json";
 export const METRO_SITE_CLIENTS_METADATA_KEY = "metro_site_clients_json";
 export const METRO_SITE_TESTIMONIALS_METADATA_KEY = "metro_site_testimonials_json";
 export const METRO_SITE_FAQ_METADATA_KEY = "metro_site_faq_json";
+export const METRO_SITE_HERO_METADATA_KEY = "metro_site_hero_json";
 
 export const metroSiteCompanySchema = z.object({
   name: z.string().min(1).max(200),
@@ -67,6 +68,16 @@ const gallerySplitWrapperSchema = z.object({
   urls: galleryUrlsSchema,
 });
 
+const heroUrlsSchema = z
+  .array(z.string().min(1).max(2000))
+  .min(0)
+  .max(8);
+
+const heroSplitWrapperSchema = z.object({
+  v: z.literal(1),
+  urls: heroUrlsSchema,
+});
+
 export const metroSiteContentV1Schema = z.object({
   v: z.literal(1),
   company: metroSiteCompanySchema,
@@ -76,11 +87,21 @@ export const metroSiteContentV1Schema = z.object({
   faq: z.array(faqSchema).min(1).max(50),
 });
 
-export type MetroSiteContentV1 = z.infer<typeof metroSiteContentV1Schema>;
+/** Isi legacy `metro_site_content_json` (tanpa hero — hero pakai kunci terpisah). */
+export type MetroSiteContentBaseV1 = z.infer<typeof metroSiteContentV1Schema>;
+
+/** Konten storefront lengkap termasuk URL latar hero (metadata `metro_site_hero_json`). */
+export type MetroSiteContentV1 = MetroSiteContentBaseV1 & {
+  heroBackgroundUrls: string[];
+};
 export type MetroSiteCompanyV1 = z.infer<typeof metroSiteCompanySchema>;
 
 export const metroSiteGalleryPostSchema = z.object({
   urls: galleryUrlsSchema,
+});
+
+export const metroSiteHeroPostSchema = z.object({
+  urls: heroUrlsSchema,
 });
 
 export const metroSiteClientsPostSchema = z.object({
@@ -113,7 +134,7 @@ export function parseMetroSiteContentFromMetadata(
   try {
     const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
     const r = metroSiteContentV1Schema.safeParse(parsed);
-    return r.success ? r.data : null;
+    return r.success ? { ...r.data, heroBackgroundUrls: [] } : null;
   } catch {
     return null;
   }
@@ -136,6 +157,17 @@ export function parseGalleryUrlsFromStoreMetadata(raw: unknown): string[] | null
     return r.success ? r.data : null;
   }
   const w = gallerySplitWrapperSchema.safeParse(parsed);
+  return w.success ? w.data.urls : null;
+}
+
+export function parseHeroUrlsFromStoreMetadata(raw: unknown): string[] | null {
+  const parsed = parseJsonValue(raw);
+  if (parsed == null) return null;
+  if (Array.isArray(parsed)) {
+    const r = heroUrlsSchema.safeParse(parsed);
+    return r.success ? r.data : null;
+  }
+  const w = heroSplitWrapperSchema.safeParse(parsed);
   return w.success ? w.data.urls : null;
 }
 
@@ -242,6 +274,7 @@ export function defaultMetroSiteContent(): MetroSiteContentV1 {
         a: "Seluruh Indonesia via kurir. Untuk Jabodetabek tersedia opsi pickup di workshop kami.",
       },
     ],
+    heroBackgroundUrls: [],
   };
 }
 
@@ -290,7 +323,11 @@ export function resolveMetroSiteContent(
     legacy?.faq ??
     def.faq;
 
-  return { v: 1, company, gallery, clients, testimonials, faq };
+  const heroBackgroundUrls =
+    parseHeroUrlsFromStoreMetadata(m[METRO_SITE_HERO_METADATA_KEY]) ??
+    def.heroBackgroundUrls;
+
+  return { v: 1, company, gallery, clients, testimonials, faq, heroBackgroundUrls };
 }
 
 /** @deprecated Prefer `resolveMetroSiteContent` dengan metadata penuh. */
@@ -301,7 +338,8 @@ export function mergeMetroSiteContent(rawLegacyBlob: unknown): MetroSiteContentV
 }
 
 export function serializeMetroSiteContent(content: MetroSiteContentV1): string {
-  return JSON.stringify(content);
+  const { heroBackgroundUrls: _hero, ...rest } = content;
+  return JSON.stringify(rest);
 }
 
 export function serializeMetroSiteCompany(company: MetroSiteCompanyV1): string {
@@ -309,6 +347,10 @@ export function serializeMetroSiteCompany(company: MetroSiteCompanyV1): string {
 }
 
 export function serializeMetroSiteGallery(urls: string[]): string {
+  return JSON.stringify({ v: 1 as const, urls });
+}
+
+export function serializeMetroSiteHero(urls: string[]): string {
   return JSON.stringify({ v: 1 as const, urls });
 }
 
@@ -338,6 +380,7 @@ export function hasAnySiteContentMetadata(
   if (m[METRO_SITE_CLIENTS_METADATA_KEY] != null) return true;
   if (m[METRO_SITE_TESTIMONIALS_METADATA_KEY] != null) return true;
   if (m[METRO_SITE_FAQ_METADATA_KEY] != null) return true;
+  if (m[METRO_SITE_HERO_METADATA_KEY] != null) return true;
   return false;
 }
 
@@ -400,11 +443,22 @@ export function isMetroSiteFaqSectionDefault(
   );
 }
 
+export function isMetroSiteHeroSectionDefault(
+  metadata: Record<string, unknown> | null | undefined,
+): boolean {
+  const m = normalizedMetadata(metadata);
+  return (
+    parseHeroUrlsFromStoreMetadata(m[METRO_SITE_HERO_METADATA_KEY]) == null &&
+    parseMetroSiteContentFromMetadata(m[METRO_SITE_CONTENT_METADATA_KEY]) == null
+  );
+}
+
 export function splitSiteContentDefaultsForSeed(): Record<string, string> {
   const d = defaultMetroSiteContent();
   return {
     [METRO_SITE_COMPANY_METADATA_KEY]: serializeMetroSiteCompany(d.company),
     [METRO_SITE_GALLERY_METADATA_KEY]: serializeMetroSiteGallery(d.gallery),
+    [METRO_SITE_HERO_METADATA_KEY]: serializeMetroSiteHero(d.heroBackgroundUrls),
     [METRO_SITE_CLIENTS_METADATA_KEY]: serializeMetroSiteClients(d.clients),
     [METRO_SITE_TESTIMONIALS_METADATA_KEY]: serializeMetroSiteTestimonials(
       d.testimonials,
