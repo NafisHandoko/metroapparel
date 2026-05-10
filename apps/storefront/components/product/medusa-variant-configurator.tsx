@@ -27,7 +27,7 @@ import {
   selectableValuesForOption,
   variantCalculatedAmount,
 } from "@/lib/medusa/variant-picker";
-import { site } from "@/lib/data/site";
+import { useSiteContent } from "@/components/site-content-provider";
 import { getWhatsAppLink } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 
@@ -70,6 +70,7 @@ export function MedusaVariantConfigurator({
   addonOptions,
   collarOptions,
 }: MedusaVariantConfiguratorProps) {
+  const { company } = useSiteContent();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [cartError, setCartError] = useState<string | null>(null);
@@ -179,7 +180,7 @@ export function MedusaVariantConfigurator({
 
   const waMessage = useMemo(() => {
     const lines = [
-      `Halo ${site.name},`,
+      `Halo ${company.name},`,
       `Saya tertarik: *${product.title}* (/products/${productHandle})`,
     ];
     for (const opt of options) {
@@ -200,6 +201,7 @@ export function MedusaVariantConfigurator({
     lines.push("Mohon info MOQ dan jadwal. Terima kasih!");
     return lines.join("\n");
   }, [
+    company.name,
     product.title,
     productHandle,
     options,
@@ -212,7 +214,7 @@ export function MedusaVariantConfigurator({
     total,
   ]);
 
-  const waHref = getWhatsAppLink(waMessage);
+  const waHref = getWhatsAppLink(waMessage, company.whatsappDigits);
 
   function onPickOptionValue(optionId: string, value: string) {
     const next = findVariantAfterOptionChange(

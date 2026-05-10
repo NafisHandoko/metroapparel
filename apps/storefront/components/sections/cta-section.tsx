@@ -4,10 +4,11 @@ import { motion, useReducedMotion } from "framer-motion";
 
 import { Reveal } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
+import { useSiteContent } from "@/components/site-content-provider";
 import { getWhatsAppLink } from "@/lib/whatsapp";
-import { site } from "@/lib/data/site";
 
 export function CtaSection() {
+  const { company } = useSiteContent();
   const reduce = useReducedMotion();
 
   return (
@@ -48,7 +49,8 @@ export function CtaSection() {
               <Button asChild size="xl" className="shadow-[0_0_40px_-6px_rgba(158,255,0,0.55)]">
                 <a
                   href={getWhatsAppLink(
-                    `Halo ${site.name}, kami siap diskusi jersey custom untuk tim.`,
+                    `Halo ${company.name}, kami siap diskusi jersey custom untuk tim.`,
+                    company.whatsappDigits,
                   )}
                   target="_blank"
                   rel="noreferrer"

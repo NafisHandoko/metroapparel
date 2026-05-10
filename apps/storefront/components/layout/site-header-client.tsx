@@ -7,7 +7,8 @@ import { motion } from "framer-motion";
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
-import { primaryCatalogNav, site } from "@/lib/data/site";
+import { useSiteContent } from "@/components/site-content-provider";
+import { primaryCatalogNav } from "@/lib/data/site";
 import { getWhatsAppLink } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +42,7 @@ function CartHeaderLink({ itemCount }: { itemCount: number }) {
 }
 
 export function SiteHeaderClient({ itemCount }: { itemCount: number }) {
+  const { company } = useSiteContent();
   const [scrolled, setScrolled] = React.useState(false);
 
   React.useEffect(() => {
@@ -67,7 +69,7 @@ export function SiteHeaderClient({ itemCount }: { itemCount: number }) {
           >
             <Image
               src="/logo-with-text.png"
-              alt={`${site.name} - beranda`}
+              alt={`${company.name} - beranda`}
               fill
               className="object-contain object-left"
               sizes="(max-width: 640px) 144px, 176px"
@@ -91,7 +93,8 @@ export function SiteHeaderClient({ itemCount }: { itemCount: number }) {
           <Button asChild size="sm" className="hidden sm:inline-flex">
             <a
               href={getWhatsAppLink(
-                `Halo ${site.name}, saya ingin konsultasi jersey custom.`,
+                `Halo ${company.name}, saya ingin konsultasi jersey custom.`,
+                company.whatsappDigits,
               )}
               target="_blank"
               rel="noreferrer"
@@ -117,7 +120,8 @@ export function SiteHeaderClient({ itemCount }: { itemCount: number }) {
               ))}
               <a
                 href={getWhatsAppLink(
-                  `Halo ${site.name}, saya ingin konsultasi jersey custom.`,
+                  `Halo ${company.name}, saya ingin konsultasi jersey custom.`,
+                  company.whatsappDigits,
                 )}
                 target="_blank"
                 rel="noreferrer"

@@ -1,15 +1,18 @@
 import { CategoryCatalogView } from "@/components/product/category-catalog-view";
-import { site } from "@/lib/data/site";
 import { listMetroProducts } from "@/lib/medusa/products";
+import { getResolvedSiteContent } from "@/lib/medusa/site-content";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: `Toko Metro — ${site.name}`,
-  description:
-    "Training pants, jaket, short pants, polo, dan apparel Lotto/CVC — katalog Toko Metro.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const content = await getResolvedSiteContent();
+  return {
+    title: `Toko Metro — ${content.company.name}`,
+    description:
+      "Training pants, jaket, short pants, polo, dan apparel Lotto/CVC — katalog Toko Metro.",
+  };
+}
 
 export default async function TokoMetroCatalogPage() {
   const all = await listMetroProducts();

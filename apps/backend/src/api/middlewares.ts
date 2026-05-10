@@ -14,5 +14,11 @@ export default defineMiddlewares({
         authenticate("user", ["session", "bearer", "api-key"]),
       ],
     },
+    {
+      matcher: "/admin/metro-site-content",
+      middlewares: [
+        authenticate("user", ["session", "bearer", "api-key"]),
+      ],
+    },
   ],
 });

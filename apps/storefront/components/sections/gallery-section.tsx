@@ -5,7 +5,7 @@ import { useReducedMotion } from "framer-motion";
 
 import { InfiniteMarquee } from "@/components/motion/infinite-marquee";
 import { Reveal } from "@/components/motion/reveal";
-import { galleryImages } from "@/lib/data/site";
+import { useSiteContent } from "@/components/site-content-provider";
 import { cn } from "@/lib/utils";
 
 function GallerySlide({ src, index }: { src: string; index: number }) {
@@ -27,10 +27,16 @@ function GallerySlide({ src, index }: { src: string; index: number }) {
   );
 }
 
-function GallerySegment({ keySuffix }: { keySuffix: string }) {
+function GallerySegment({
+  keySuffix,
+  images,
+}: {
+  keySuffix: string;
+  images: string[];
+}) {
   return (
     <>
-      {galleryImages.map((src, i) => (
+      {images.map((src, i) => (
         <GallerySlide key={`${src}-${keySuffix}-${i}`} src={src} index={i} />
       ))}
     </>
@@ -38,6 +44,7 @@ function GallerySegment({ keySuffix }: { keySuffix: string }) {
 }
 
 export function GallerySection() {
+  const { gallery: galleryImages } = useSiteContent();
   const reduce = useReducedMotion();
 
   return (
@@ -67,7 +74,9 @@ export function GallerySection() {
           reducedMotion={!!reduce}
           ariaLabel="Galeri foto lapangan, dapat diseret horizontal"
           viewportClassName={reduce ? "mt-10" : "mt-6 min-h-[min(72vw,360px)] sm:min-h-[22rem]"}
-          renderSegment={(_, keySuffix) => <GallerySegment keySuffix={keySuffix} />}
+          renderSegment={(_, keySuffix) => (
+            <GallerySegment keySuffix={keySuffix} images={galleryImages} />
+          )}
         />
       </div>
     </section>

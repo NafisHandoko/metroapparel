@@ -3,8 +3,8 @@ import Link from "next/link";
 import { CartLineRemove } from "@/components/cart/cart-line-remove";
 import { Button } from "@/components/ui/button";
 import { formatIdr } from "@/lib/data/catalog";
-import { site } from "@/lib/data/site";
 import { retrieveMetroCart } from "@/lib/medusa/cart-server";
+import { getResolvedSiteContent } from "@/lib/medusa/site-content";
 import type { Metadata } from "next";
 
 function strMeta(m: Record<string, unknown>, key: string): string | undefined {
@@ -108,9 +108,12 @@ function MetroLineBreakdown({
   );
 }
 
-export const metadata: Metadata = {
-  title: `Keranjang — ${site.name}`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const content = await getResolvedSiteContent();
+  return {
+    title: `Keranjang — ${content.company.name}`,
+  };
+}
 
 export default async function CartPage() {
   const cart = await retrieveMetroCart();

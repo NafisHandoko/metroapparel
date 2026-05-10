@@ -15,8 +15,8 @@ import * as React from "react";
 import { ArrowUpRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useSiteContent } from "@/components/site-content-provider";
 import { getWhatsAppLink } from "@/lib/whatsapp";
-import { site } from "@/lib/data/site";
 
 const heroImage =
   "https://images.unsplash.com/photo-1517649763962-0c62306601b7?w=1920&q=85";
@@ -41,6 +41,7 @@ const textItem = {
 };
 
 export function HeroSection() {
+  const { company } = useSiteContent();
   const reduce = useReducedMotion();
   const textContainerVariants = reduce
     ? { hidden: {}, visible: { transition: { staggerChildren: 0, delayChildren: 0 } } }
@@ -161,7 +162,8 @@ export function HeroSection() {
           <Button asChild size="xl" className="group min-w-[14rem] shadow-[0_0_36px_-8px_rgba(158,255,0,0.45)]">
             <a
               href={getWhatsAppLink(
-                `Halo ${site.name}, tim kami ingin konsultasi jersey custom.`,
+                `Halo ${company.name}, tim kami ingin konsultasi jersey custom.`,
+                company.whatsappDigits,
               )}
               target="_blank"
               rel="noreferrer"

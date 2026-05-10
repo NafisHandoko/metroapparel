@@ -3,10 +3,12 @@
 import { useReducedMotion } from "framer-motion";
 
 import { InfiniteMarquee } from "@/components/motion/infinite-marquee";
-import { clientLogos } from "@/lib/data/site";
+import { useSiteContent } from "@/components/site-content-provider";
 import { cn } from "@/lib/utils";
 
-function LogoTile({ client }: { client: (typeof clientLogos)[number] }) {
+type ClientRow = { name: string; abbr: string };
+
+function LogoTile({ client }: { client: ClientRow }) {
   return (
     <div
       className={cn(
@@ -24,10 +26,16 @@ function LogoTile({ client }: { client: (typeof clientLogos)[number] }) {
   );
 }
 
-function LogoRow({ keySuffix }: { keySuffix: string }) {
+function LogoRow({
+  keySuffix,
+  clients,
+}: {
+  keySuffix: string;
+  clients: ClientRow[];
+}) {
   return (
     <>
-      {clientLogos.map((client) => (
+      {clients.map((client) => (
         <LogoTile key={`${client.name}-${keySuffix}`} client={client} />
       ))}
     </>
@@ -35,6 +43,7 @@ function LogoRow({ keySuffix }: { keySuffix: string }) {
 }
 
 export function ClientsSection() {
+  const { clients: clientLogos } = useSiteContent();
   const reduce = useReducedMotion();
 
   return (
@@ -47,7 +56,9 @@ export function ClientsSection() {
           reducedMotion={!!reduce}
           ariaLabel="Logo klien, dapat diseret horizontal"
           viewportClassName={reduce ? "mt-10" : "mt-6 min-h-[3.5rem]"}
-          renderSegment={(_, keySuffix) => <LogoRow keySuffix={keySuffix} />}
+          renderSegment={(_, keySuffix) => (
+            <LogoRow keySuffix={keySuffix} clients={clientLogos} />
+          )}
         />
       </div>
     </section>

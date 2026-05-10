@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Accordion,
   AccordionContent,
@@ -5,9 +7,10 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Reveal } from "@/components/motion/reveal";
-import { faqItems } from "@/lib/data/site";
+import { useSiteContent } from "@/components/site-content-provider";
 
 export function FaqSection() {
+  const { faq: faqItems } = useSiteContent();
   return (
     <section id="faq" className="scroll-mt-24 border-t border-white/10 py-20 sm:py-24">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">

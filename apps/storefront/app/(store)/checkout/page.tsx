@@ -3,13 +3,16 @@ import { redirect } from "next/navigation";
 
 import { MetroCheckoutForm } from "@/components/checkout/metro-checkout-form";
 import { Button } from "@/components/ui/button";
-import { site } from "@/lib/data/site";
 import { retrieveMetroCart } from "@/lib/medusa/cart-server";
+import { getResolvedSiteContent } from "@/lib/medusa/site-content";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: `Checkout — ${site.name}`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const content = await getResolvedSiteContent();
+  return {
+    title: `Checkout — ${content.company.name}`,
+  };
+}
 
 export default async function CheckoutPage() {
   const cart = await retrieveMetroCart();

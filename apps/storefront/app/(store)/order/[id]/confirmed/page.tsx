@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { site } from "@/lib/data/site";
+import { getResolvedSiteContent } from "@/lib/medusa/site-content";
 import { getWhatsAppLink } from "@/lib/whatsapp";
 import type { Metadata } from "next";
 
@@ -9,15 +9,19 @@ type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
+  const content = await getResolvedSiteContent();
   return {
-    title: `Pesanan ${id} — ${site.name}`,
+    title: `Pesanan ${id} — ${content.company.name}`,
   };
 }
 
 export default async function OrderConfirmedPage({ params }: Props) {
   const { id } = await params;
+  const content = await getResolvedSiteContent();
+  const { company } = content;
   const wa = getWhatsAppLink(
-    `Halo ${site.name}, saya baru checkout di web. No. order Medusa: ${id}. Mohon konfirmasi pembayaran & produksi.`,
+    `Halo ${company.name}, saya baru checkout di web. No. order Medusa: ${id}. Mohon konfirmasi pembayaran & produksi.`,
+    company.whatsappDigits,
   );
 
   return (

@@ -5,7 +5,8 @@ import { notFound } from "next/navigation";
 import { MedusaVariantConfigurator } from "@/components/product/medusa-variant-configurator";
 import { Badge } from "@/components/ui/badge";
 import { formatIdr } from "@/lib/data/catalog";
-import { catalogListPathForCategory, site } from "@/lib/data/site";
+import { catalogListPathForCategory } from "@/lib/data/site";
+import { getResolvedSiteContent } from "@/lib/medusa/site-content";
 import { getMetroAddonOptionsForProduct } from "@/lib/medusa/metro-addon-catalog";
 import { getMetroCollarOptionsForProduct } from "@/lib/medusa/metro-collar-catalog";
 import {
@@ -21,10 +22,13 @@ type PageProps = { params: Promise<{ handle: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { handle } = await params;
-  const raw = await getMetroProductByHandle(handle);
+  const [raw, content] = await Promise.all([
+    getMetroProductByHandle(handle),
+    getResolvedSiteContent(),
+  ]);
   if (!raw) return { title: "Produk" };
   return {
-    title: `${raw.title} — ${site.name}`,
+    title: `${raw.title} — ${content.company.name}`,
     description: raw.description ?? raw.title,
   };
 }

@@ -32,6 +32,11 @@ import {
   defaultMetroCollarRulesPayload,
   serializeMetroCollarRulesPayload,
 } from "../metro/metro-collar-rules";
+import {
+  METRO_SITE_CONTENT_METADATA_KEY,
+  defaultMetroSiteContent,
+  serializeMetroSiteContent,
+} from "../metro/metro-site-content";
 
 const COUNTRY_ID = "id";
 
@@ -531,7 +536,10 @@ export default async function initial_data_seed({
   const needsCollarRules =
     metroStoreRow?.id &&
     metroStoreRow.metadata?.[METRO_COLLAR_RULES_METADATA_KEY] == null;
-  if (needsAddonRules || needsCollarRules) {
+  const needsSiteContent =
+    metroStoreRow?.id &&
+    metroStoreRow.metadata?.[METRO_SITE_CONTENT_METADATA_KEY] == null;
+  if (needsAddonRules || needsCollarRules || needsSiteContent) {
     const base = { ...(metroStoreRow!.metadata ?? {}) };
     if (needsAddonRules) {
       base[METRO_ADDON_RULES_METADATA_KEY] = serializeMetroAddonRulesPayload(
@@ -541,6 +549,11 @@ export default async function initial_data_seed({
     if (needsCollarRules) {
       base[METRO_COLLAR_RULES_METADATA_KEY] = serializeMetroCollarRulesPayload(
         defaultMetroCollarRulesPayload(),
+      );
+    }
+    if (needsSiteContent) {
+      base[METRO_SITE_CONTENT_METADATA_KEY] = serializeMetroSiteContent(
+        defaultMetroSiteContent(),
       );
     }
     await updateStoresWorkflow(container).run({
@@ -554,6 +567,11 @@ export default async function initial_data_seed({
     }
     if (needsCollarRules) {
       logger.info("Metadata kerah global (metro_collar_rules) diset ke default seed.");
+    }
+    if (needsSiteContent) {
+      logger.info(
+        "Metadata konten toko (metro_site_content_json) diset ke default seed.",
+      );
     }
   }
 

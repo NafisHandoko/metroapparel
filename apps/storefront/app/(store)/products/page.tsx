@@ -1,15 +1,18 @@
 import { ProductCategoryFilter } from "@/components/product/product-category-filter";
-import { categorySlugToName, site } from "@/lib/data/site";
+import { categorySlugToName } from "@/lib/data/site";
 import { listMetroProducts } from "@/lib/medusa/products";
+import { getResolvedSiteContent } from "@/lib/medusa/site-content";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: `Produk — ${site.name}`,
-  description:
-    "Katalog lengkap Metro Apparel: Custom Jersey dan Toko Metro (training pants, jaket, polo, dll.).",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const content = await getResolvedSiteContent();
+  return {
+    title: `Produk — ${content.company.name}`,
+    description: `Katalog lengkap ${content.company.name}: Custom Jersey dan Toko Metro (training pants, jaket, polo, dll.).`,
+  };
+}
 
 type PageProps = {
   searchParams: Promise<{ category?: string }>;

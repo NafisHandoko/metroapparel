@@ -3,9 +3,10 @@
 import { motion, useReducedMotion } from "framer-motion";
 
 import { Reveal, RevealItem, RevealStagger } from "@/components/motion/reveal";
-import { testimonials } from "@/lib/data/site";
+import { useSiteContent } from "@/components/site-content-provider";
 
 export function TestimonialsSection() {
+  const { testimonials } = useSiteContent();
   const reduce = useReducedMotion();
 
   return (

@@ -7,13 +7,16 @@ import { HeroSection } from "@/components/sections/hero-section";
 import { SocialProofSection } from "@/components/sections/social-proof-section";
 import { TestimonialsSection } from "@/components/sections/testimonials-section";
 import { WhyUsSection } from "@/components/sections/why-us-section";
-import { site } from "@/lib/data/site";
+import { getResolvedSiteContent } from "@/lib/medusa/site-content";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: `${site.name} — Custom Jersey & Apparel`,
-  description: site.tagline,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const content = await getResolvedSiteContent();
+  return {
+    title: `${content.company.name} — Custom Jersey & Apparel`,
+    description: content.company.tagline,
+  };
+}
 
 export default function HomePage() {
   return (

@@ -1,15 +1,18 @@
 import { CategoryCatalogView } from "@/components/product/category-catalog-view";
-import { site } from "@/lib/data/site";
 import { listMetroProducts } from "@/lib/medusa/products";
+import { getResolvedSiteContent } from "@/lib/medusa/site-content";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: `Custom Jersey — ${site.name}`,
-  description:
-    "Jersey atasan dan jersey satu set — paket Essential hingga Ultimate, konfigurasi di toko.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const content = await getResolvedSiteContent();
+  return {
+    title: `Custom Jersey — ${content.company.name}`,
+    description:
+      "Jersey atasan dan jersey satu set — paket Essential hingga Ultimate, konfigurasi di toko.",
+  };
+}
 
 export default async function CustomJerseyCatalogPage() {
   const all = await listMetroProducts();
