@@ -17,8 +17,8 @@ export const site = {
 
 export const stats = [
   { value: "1000+", label: "Jersey telah diproduksi" },
-  { value: "50+", label: "Tim & instansi mempercayai kami" },
-  { value: "7–14", label: "Hari produksi rata-rata" },
+  { value: "50+", label: "Tim & komunitas mempercayai kami" },
+  { value: "7-14", label: "Hari produksi rata-rata" },
 ];
 
 /** Kategori Medusa / jalur katalog toko (bukan siluet per produk). */
@@ -27,7 +27,7 @@ export const categories = [
     slug: "custom-jersey",
     name: "Custom Jersey",
     description:
-      "Jersey atasan & set — paket Essential–Prime dan Regular–Ultimate.",
+      "Jersey atasan & set — paket Essential-Prime dan Regular-Ultimate.",
     image:
       "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=800&q=80",
   },
