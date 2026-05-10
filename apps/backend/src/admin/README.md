@@ -1,6 +1,6 @@
 # Admin Customizations
 
-Metro: **Settings → Metro add-on** (`src/admin/routes/settings/metro-addons/page.tsx`) — add-on global (`GET/POST /admin/metro-addon-catalog`). **Settings → Metro collars** (`settings/metro-collars/page.tsx`) — tipe kerah & surcharge (`GET/POST /admin/metro-collar-catalog`). **Settings → Konten toko** (`settings/metro-site-content/page.tsx`) — galeri (**pratinjau grid** + hapus per gambar, unggah `POST /admin/uploads`, atau tambah URL), klien, testimoni, FAQ, kontak & sosial (`GET/POST /admin/metro-site-content`; storefront: `GET /store/metro-site-content`, metadata `metro_site_content_json` pada store).
+Metro: **Settings → Metro add-on** (`src/admin/routes/settings/metro-addons/page.tsx`) — add-on global (`GET/POST /admin/metro-addon-catalog`). **Settings → Metro collars** (`settings/metro-collars/page.tsx`) — tipe kerah & surcharge (`GET/POST /admin/metro-collar-catalog`). **Settings → Konten toko** (`settings/metro-site-content/page.tsx`) — galeri (**pratinjau grid** + drag urut ulang + hapus, unggah `POST /admin/uploads`, atau tambah URL), klien, testimoni, FAQ, kontak & sosial (`GET/POST /admin/metro-site-content`; storefront: `GET /store/metro-site-content`, metadata `metro_site_content_json` pada store).
 
 **Order:** widget `src/admin/widgets/order-metro-details.tsx` menampilkan kerah, paket, dan rincian harga Metro di atas detail order (`order.details.before`).
 

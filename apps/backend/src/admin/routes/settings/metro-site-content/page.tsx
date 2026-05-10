@@ -1,5 +1,5 @@
 import { defineRouteConfig } from "@medusajs/admin-sdk";
-import { Photo, Trash } from "@medusajs/icons";
+import { DotsSix, Photo, Trash } from "@medusajs/icons";
 import {
   Button,
   Container,
@@ -30,8 +30,30 @@ function uploadRowPublicUrl(row: UploadFileRow): string {
   return nested;
 }
 
+function reorderGalleryItems(
+  urls: string[],
+  fromIndex: number,
+  toIndex: number,
+): string[] {
+  if (fromIndex === toIndex) return urls;
+  if (
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= urls.length ||
+    toIndex >= urls.length
+  ) {
+    return urls;
+  }
+  const next = [...urls];
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, moved);
+  return next;
+}
+
 const MetroSiteContentSettingsPage = () => {
   const galleryFileInputRef = useRef<HTMLInputElement>(null);
+  /** Indeks sumber drag (HTML5 DnD) — ref agar `dragOver` tidak baca state stale. */
+  const galleryDragFromRef = useRef<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
@@ -39,6 +61,12 @@ const MetroSiteContentSettingsPage = () => {
   /** Urutan gambar galeri (URL publik) — disinkronkan ke `content.gallery` saat simpan. */
   const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
   const [galleryUrlDraft, setGalleryUrlDraft] = useState("");
+  const [draggingGalleryIndex, setDraggingGalleryIndex] = useState<number | null>(
+    null,
+  );
+  const [dragOverGalleryIndex, setDragOverGalleryIndex] = useState<number | null>(
+    null,
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -145,6 +173,49 @@ const MetroSiteContentSettingsPage = () => {
     } else {
       toast.success("Gambar ditambahkan dari URL. Klik Simpan semua untuk menyimpan.");
     }
+  };
+
+  const handleGalleryDragStart = (e: React.DragEvent, index: number) => {
+    galleryDragFromRef.current = index;
+    setDraggingGalleryIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", String(index));
+  };
+
+  const handleGalleryDragEnd = () => {
+    galleryDragFromRef.current = null;
+    setDraggingGalleryIndex(null);
+    setDragOverGalleryIndex(null);
+  };
+
+  const handleGalleryDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const from = galleryDragFromRef.current;
+    if (from !== null && from !== index) {
+      setDragOverGalleryIndex(index);
+    }
+  };
+
+  const handleGalleryDragLeave = (e: React.DragEvent) => {
+    const next = e.relatedTarget as Node | null;
+    if (next && e.currentTarget.contains(next)) return;
+    setDragOverGalleryIndex(null);
+  };
+
+  const handleGalleryDrop = (e: React.DragEvent, toIndex: number) => {
+    e.preventDefault();
+    const fromIndex = Number.parseInt(e.dataTransfer.getData("text/plain"), 10);
+    if (Number.isNaN(fromIndex) || fromIndex === toIndex) {
+      galleryDragFromRef.current = null;
+      setDraggingGalleryIndex(null);
+      setDragOverGalleryIndex(null);
+      return;
+    }
+    setGalleryUrls((prev) => reorderGalleryItems(prev, fromIndex, toIndex));
+    galleryDragFromRef.current = null;
+    setDraggingGalleryIndex(null);
+    setDragOverGalleryIndex(null);
   };
 
   const save = async () => {
@@ -359,7 +430,8 @@ const MetroSiteContentSettingsPage = () => {
           <Heading level="h2">Galeri</Heading>
           <Text size="small" className="text-ui-fg-muted">
             Atur urutan gambar seperti di etalase: <strong>Unggah</strong> ke server Medusa, atau
-            <strong> tambah dari URL</strong> (mis. Unsplash). Pratinjau muncul di bawah — hapus dengan
+            <strong> tambah dari URL</strong> (mis. Unsplash). <strong>Tarik area gambar</strong> (ikon titik
+            kiri atas) untuk mengurut ulang — urutan di sini sama dengan di storefront. Hapus dengan
             tombol sampah. Jangan lupa <strong>Simpan semua</strong> setelah selesai.
           </Text>
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
@@ -415,14 +487,36 @@ const MetroSiteContentSettingsPage = () => {
               {galleryUrls.map((url, index) => (
                 <li
                   key={`${index}-${url.slice(0, 48)}`}
-                  className="group relative overflow-hidden rounded-lg border border-ui-border-base bg-ui-bg-subtle"
+                  className={`group relative overflow-hidden rounded-lg border bg-ui-bg-subtle transition-shadow ${
+                    dragOverGalleryIndex === index
+                      ? "border-ui-border-interactive ring-2 ring-ui-border-interactive"
+                      : "border-ui-border-base"
+                  }`}
+                  onDragOver={(e) => handleGalleryDragOver(e, index)}
+                  onDragLeave={handleGalleryDragLeave}
+                  onDrop={(e) => handleGalleryDrop(e, index)}
                 >
-                  <div className="relative aspect-[4/5] w-full bg-ui-bg-base">
+                  <div
+                    draggable
+                    onDragStart={(e) => handleGalleryDragStart(e, index)}
+                    onDragEnd={handleGalleryDragEnd}
+                    className={`relative aspect-[4/5] w-full cursor-grab touch-none bg-ui-bg-base active:cursor-grabbing ${
+                      draggingGalleryIndex === index ? "opacity-60" : ""
+                    }`}
+                  >
+                    <div
+                      className="pointer-events-none absolute left-1.5 top-1.5 z-[1] flex h-7 w-7 items-center justify-center rounded border border-white/25 bg-black/45 text-white/95 shadow-sm"
+                      title="Seret untuk mengurut ulang"
+                      aria-hidden
+                    >
+                      <DotsSix className="h-4 w-4" />
+                    </div>
                     <img
                       src={url}
                       alt=""
                       className="absolute inset-0 h-full w-full object-cover"
                       loading="lazy"
+                      draggable={false}
                     />
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent px-2 pb-2 pt-10">
                       <p
@@ -432,14 +526,18 @@ const MetroSiteContentSettingsPage = () => {
                         {url}
                       </p>
                     </div>
-                    <div className="absolute right-1.5 top-1.5">
+                    <div className="absolute right-1.5 top-1.5 z-[1]">
                       <Button
                         type="button"
                         variant="secondary"
                         size="small"
                         className="h-8 w-8 border border-red-500/40 bg-ui-bg-base p-0 text-red-600 shadow-sm hover:bg-red-500/10"
                         title="Hapus gambar ini"
-                        onClick={() => removeGalleryAt(index)}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeGalleryAt(index);
+                        }}
                       >
                         <Trash className="h-4 w-4" />
                       </Button>
