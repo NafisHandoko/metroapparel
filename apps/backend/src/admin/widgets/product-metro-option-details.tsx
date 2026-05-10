@@ -180,7 +180,7 @@ const ProductMetroOptionDetailsWidget = ({
         body: JSON.stringify({ metadata: nextMeta }),
       });
       if (!res.ok) throw new Error(await res.text());
-      toast.success("Detail opsi untuk storefront disimpan.");
+      toast.success("Detail opsi untuk varian produk disimpan.");
       await queryClient.invalidateQueries({
         queryKey: ["admin-product-metro-option-details", productId],
       });
@@ -194,19 +194,18 @@ const ProductMetroOptionDetailsWidget = ({
 
   const dirtyHint = useMemo(() => {
     if (!hasOptions) return null;
-    return "Satu baris = satu poin di storefront. Kosongkan semua lalu simpan untuk menghapus.";
+    return "Satu baris = satu poin di varian produk. Kosongkan semua lalu simpan untuk menghapus.";
   }, [hasOptions]);
 
   return (
     <Container className="divide-y p-0 rounded-lg border border-ui-border-base bg-ui-bg-base shadow-elevation-card-rest">
       <div className="px-6 py-4">
         <Heading level="h2" className="txt-compact-large font-sans font-medium">
-          Metro — detail per nilai opsi (storefront)
+          Metro — detail per nilai opsi (varian produk)
         </Heading>
         <Text size="small" className="text-ui-fg-subtle mt-1 max-w-2xl">
           Isi poin untuk tiap nilai opsi (mis. Essential, Elite). Tampil di halaman
-          produk toko di bawah nama & harga opsi. Tidak perlu metadata manual di
-          editor JSON — cukup form ini.
+          produk toko di bawah nama & harga opsi.
         </Text>
       </div>
 

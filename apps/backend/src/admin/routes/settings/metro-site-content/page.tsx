@@ -238,7 +238,7 @@ const MetroSiteContentSettingsPage = () => {
       const data = (await res.json()) as { content: MetroSiteContentV1 };
       setContent(data.content);
       setGalleryUrls([...data.content.gallery]);
-      toast.success("Konten toko disimpan. Storefront memuat data ini dari Medusa.");
+      toast.success("Konten toko disimpan.");
     } catch (e) {
       console.error(e);
       toast.error(
