@@ -373,9 +373,6 @@ export function MedusaVariantConfigurator({
           <h2 className="font-display text-xl tracking-wide text-foreground">
             Tipe kerah
           </h2>
-          <p className="mt-1 text-sm text-muted">
-            Dikelola di Medusa Admin → Settings → Metro collars.
-          </p>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {collarOptions.map((c) => (
               <button
