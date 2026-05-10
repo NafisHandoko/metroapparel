@@ -55,12 +55,11 @@ export function GallerySection() {
             Di lapangan
           </p>
           <h2 className="mt-3 font-display text-4xl tracking-tight text-foreground sm:text-5xl">
-            Asli dipakai
+            Beneran dipakai
             <span className="text-muted"> — bukan mockup doang.</span>
           </h2>
           <p className="mt-4 text-muted">
-            Potret tim, event kampus, dan komunitas dengan apparel Metro di dunia
-            nyata.
+            Potret tim, event kampus, dan komunitas dengan Metro Apparel di studio kami.
           </p>
         </Reveal>
 

@@ -14,17 +14,16 @@ export function WhyUsSection() {
         <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
           <Reveal className="max-w-xl">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">
-              Kenapa Metro
+              Kenapa Pilih Metro Apparel
             </p>
             <h2 className="mt-3 font-display text-4xl tracking-tight text-foreground sm:text-5xl">
-              Built for teams
-              <span className="block text-muted">that move fast.</span>
+              Buat tim yang mau jersey rapi,
+              <span className="block text-muted">tanpa ribet.</span>
             </h2>
           </Reveal>
           <Reveal className="max-w-md lg:text-right" delay={0.06}>
             <p className="text-sm leading-relaxed text-muted">
-              Kami bukan template SaaS — setiap batch apparel dikerjakan dengan
-              kontrol kualitas manual dan komunikasi langsung dengan tim produksi.
+              Fokus kami sederhana: jersey yang nyaman dipakai, desain yang bisa kamu ubah sampai cocok, dan proses yang jelas biar kamu tidak nebak-nebak sendirian.
             </p>
           </Reveal>
         </div>

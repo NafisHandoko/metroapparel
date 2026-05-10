@@ -50,7 +50,7 @@ export function ClientsSection() {
     <section className="border-t border-white/10 py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <p className="text-center text-xs font-semibold uppercase tracking-[0.35em] text-muted">
-          Dipercaya organisasi & komunitas
+          Dipercaya oleh tim & komunitas
         </p>
         <InfiniteMarquee
           reducedMotion={!!reduce}

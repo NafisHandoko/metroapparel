@@ -18,13 +18,13 @@ export function FeaturedProductsGrid({ products }: FeaturedProductsGridProps) {
         <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
           <Reveal className="max-w-xl">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">
-              Produk unggulan
+              Pilihan Tim
             </p>
             <h2 className="mt-3 font-display text-4xl tracking-tight text-foreground sm:text-5xl">
-              Drop terbaru
+              Jersey & apparel yang lagi dicari
             </h2>
             <p className="mt-3 max-w-lg text-muted">
-              Kurasi siluet yang sering dipilih tim kompetitif dan komunitas besar.
+              Mulai dari paket custom jersey sampai polo dan jaket — lihat dulu yang paling sering dipesan tim dan komunitas.
             </p>
           </Reveal>
           <Reveal delay={0.08} className="shrink-0">
