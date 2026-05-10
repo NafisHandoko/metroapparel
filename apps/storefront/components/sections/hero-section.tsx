@@ -134,23 +134,22 @@ export function HeroSection() {
             variants={textItemVariants}
             className="text-xs font-semibold uppercase tracking-[0.35em] text-brand"
           >
-            Custom apparel · Tim · Komunitas · Institusi
+            Jersey tim · Sekolah · Komunitas · Event
           </motion.p>
           <motion.h1
             variants={textItemVariants}
-            className="font-display text-5xl font-bold leading-[0.95] tracking-tight text-foreground sm:text-6xl md:text-7xl lg:text-8xl"
+            className="font-display text-5xl font-bold leading-[0.95] tracking-tight text-foreground sm:text-6xl md:text-7xl lg:text-7xl"
           >
-            JERSEY CUSTOM
+            PEDE DI LAPANGAN
             <span className="mt-1 block text-brand drop-shadow-[0_0_28px_rgba(158,255,0,0.35)]">
-              TANPA KOMPROMI
+              MULAI DARI JERSEY-NYA
             </span>
           </motion.h1>
           <motion.p
             variants={textItemVariants}
             className="max-w-xl text-lg leading-relaxed text-muted sm:text-xl"
           >
-            Produksi lokal dengan bahan premium, desain bebas revisi, dan workflow
-            yang siap kebut B2B — dari futsal & football hingga esports & kampus.
+            Mau jersey buat futsal sekolah, turnamen bareng komunitas, atau acara kampus? Bahan enak dipakai, desain bisa kamu utak-atik bareng kami — produksi di Kota Jombang.
           </motion.p>
         </motion.div>
         <motion.div
@@ -169,7 +168,7 @@ export function HeroSection() {
               rel="noreferrer"
               className="gap-2"
             >
-              Konsultasi via WhatsApp
+              Chat dulu di WhatsApp
               <ArrowUpRight className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </a>
           </Button>
