@@ -12,7 +12,8 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS builder
 COPY . .
 ENV NODE_ENV=production
-RUN pnpm turbo run build --filter=@metroapparel/backend --filter=@metroapparel/storefront
+RUN pnpm --filter @metroapparel/backend build && pnpm --filter @metroapparel/storefront build
+RUN cd apps/backend/.medusa/server && pnpm install --prod
 
 FROM base AS medusa
 ENV NODE_ENV=production
