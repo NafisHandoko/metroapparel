@@ -16,7 +16,13 @@
     "storefront:dev": "turbo dev --filter=@metroapparel/storefront",
     "docker:up": "docker compose up --build -d",
     "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "docker:dev:up": "docker compose -f docker/development/docker-compose.yml up --build -d",
+    "docker:dev:down": "docker compose -f docker/development/docker-compose.yml down",
+    "docker:dev:logs": "docker compose -f docker/development/docker-compose.yml logs -f",
+    "docker:prod:up": "docker compose -f docker/production/docker-compose.yml --env-file docker/production/.env up --build -d",
+    "docker:prod:down": "docker compose -f docker/production/docker-compose.yml --env-file docker/production/.env down",
+    "docker:prod:logs": "docker compose -f docker/production/docker-compose.yml --env-file docker/production/.env logs -f"
   },
   "pnpm": {
     "overrides": {

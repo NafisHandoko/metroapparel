@@ -1,0 +1,152 @@
+# Production: Traefik (Let's Encrypt) + Postgres + Redis + Medusa + Storefront.
+# Salin `env.example` → `.env` di folder ini, isi secret & kunci API, lalu:
+#   pnpm docker:prod:up
+#
+# DNS (Hostinger): A record metroapparel, admin.metroapparel, traefik → IP VPS Sumopod.
+# Buka port 80 & 443 di firewall VPS.
+
+name: metroapparel-prod
+
+services:
+  traefik:
+    image: traefik:v3.2
+    container_name: metroapparel_traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "80:80"
+      - "443:443"
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
+      - --certificatesresolvers.letsencrypt.acme.email=naffisioner@gmail.com
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_letsencrypt:/letsencrypt
+    networks:
+      - metroapparel_net
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=metroapparel_net
+      - traefik.http.middlewares.traefik-dash-https.redirectscheme.scheme=https
+      - traefik.http.middlewares.traefik-dash-https.redirectscheme.permanent=true
+      - traefik.http.routers.traefik-dash-web.rule=Host(`traefik.nafishandoko.my.id`)
+      - traefik.http.routers.traefik-dash-web.entrypoints=web
+      - traefik.http.routers.traefik-dash-web.middlewares=traefik-dash-https
+      - traefik.http.routers.traefik-dash.rule=Host(`traefik.nafishandoko.my.id`)
+      - traefik.http.routers.traefik-dash.entrypoints=websecure
+      - traefik.http.routers.traefik-dash.tls.certresolver=letsencrypt
+      - traefik.http.routers.traefik-dash.service=api@internal
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: metroapparel_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-medusa-store}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - metroapparel_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: metroapparel_redis
+    restart: unless-stopped
+    networks:
+      - metroapparel_net
+
+  medusa:
+    build:
+      context: ../..
+      dockerfile: docker/production/Dockerfile
+      target: medusa
+    container_name: metroapparel_medusa
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-medusa-store}
+      REDIS_URL: redis://redis:6379
+    env_file:
+      - .env
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"require('http').get('http://127.0.0.1:9000/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+    networks:
+      - metroapparel_net
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=metroapparel_net
+      - traefik.http.middlewares.medusa-https.redirectscheme.scheme=https
+      - traefik.http.middlewares.medusa-https.redirectscheme.permanent=true
+      - traefik.http.routers.medusa-web.rule=Host(`admin.metroapparel.nafishandoko.my.id`)
+      - traefik.http.routers.medusa-web.entrypoints=web
+      - traefik.http.routers.medusa-web.middlewares=medusa-https
+      - traefik.http.routers.medusa.rule=Host(`admin.metroapparel.nafishandoko.my.id`)
+      - traefik.http.routers.medusa.entrypoints=websecure
+      - traefik.http.routers.medusa.tls.certresolver=letsencrypt
+      - traefik.http.services.medusa.loadbalancer.server.port=9000
+
+  storefront:
+    build:
+      context: ../..
+      dockerfile: docker/production/Dockerfile
+      target: storefront
+    container_name: metroapparel_storefront
+    restart: unless-stopped
+    depends_on:
+      medusa:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      MEDUSA_BACKEND_INTERNAL_URL: http://medusa:9000
+    env_file:
+      - .env
+    networks:
+      - metroapparel_net
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=metroapparel_net
+      - traefik.http.middlewares.store-https.redirectscheme.scheme=https
+      - traefik.http.middlewares.store-https.redirectscheme.permanent=true
+      - traefik.http.routers.storefront-web.rule=Host(`metroapparel.nafishandoko.my.id`)
+      - traefik.http.routers.storefront-web.entrypoints=web
+      - traefik.http.routers.storefront-web.middlewares=store-https
+      - traefik.http.routers.storefront.rule=Host(`metroapparel.nafishandoko.my.id`)
+      - traefik.http.routers.storefront.entrypoints=websecure
+      - traefik.http.routers.storefront.tls.certresolver=letsencrypt
+      - traefik.http.services.storefront.loadbalancer.server.port=8000
+
+volumes:
+  postgres_prod_data:
+  traefik_letsencrypt:
+
+networks:
+  metroapparel_net:
+    name: metroapparel_net
