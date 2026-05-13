@@ -16,6 +16,8 @@ module.exports = defineConfig({
       ssl: false,
       sslmode: "disable",
     },
+    workerMode: process.env.MEDUSA_WORKER_MODE as "shared" | "worker" | "server",
+    redisUrl: process.env.REDIS_URL
   },
   admin: {
     vite: (config) => {
