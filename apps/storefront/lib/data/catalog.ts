@@ -205,11 +205,6 @@ export const collarOptions: CollarOption[] = [
   { id: "polo-x-v-tutup", label: "Polo x V tutup", surcharge: 10_000 },
 ];
 
-export const sizeOptions = ["S", "M", "L", "XL", "XXL", "XXXL"] as const;
-export type SizeOption = (typeof sizeOptions)[number];
-
-export const oversizeSurcharge = 15_000;
-
 export type AdditionalOption = {
   id: string;
   label: string;

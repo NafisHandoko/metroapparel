@@ -210,8 +210,6 @@ export const defaultCollarOptions: CollarOption[] = [
   { id: "polo-x-v-tutup", label: "Polo x V tutup", surcharge: 10_000 },
 ];
 
-export const oversizeSurcharge = 15_000;
-
 export type AdditionalOption = {
   id: string;
   label: string;
@@ -404,11 +402,6 @@ export function computeMetroLineFromMetadata(
       breakdown.push({ label: `Kerah (${label})`, amount: collarExtra });
       sum += collarExtra;
     }
-  }
-
-  if (metadata.oversize === "yes") {
-    breakdown.push({ label: "Oversize", amount: oversizeSurcharge });
-    sum += oversizeSurcharge;
   }
 
   const upSizeQty = Math.max(

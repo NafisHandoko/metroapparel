@@ -9,13 +9,10 @@ import { Button } from "@/components/ui/button";
 import {
   formatIdr,
   inferTierIdFromPackageLabel,
-  oversizeSurcharge,
   showCollarPickerForProductHandle,
-  sizeOptions,
   type AdditionalOption,
   type CollarOption,
   type ProductKind,
-  type SizeOption,
 } from "@/lib/data/catalog";
 import {
   metroBulletsForOptionValue,
@@ -30,6 +27,8 @@ import {
 import { useSiteContent } from "@/components/site-content-provider";
 import { getWhatsAppLink } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
+
+const MAX_ORDER_NOTES_CHARS = 12_000;
 
 type MedusaVariantConfiguratorProps = {
   product: HttpTypes.StoreProduct;
@@ -105,8 +104,7 @@ export function MedusaVariantConfigurator({
   const [collarId, setCollarId] = useState(
     () => collarOptions[0]?.id ?? "o-neck",
   );
-  const [size, setSize] = useState<SizeOption>("M");
-  const [oversize, setOversize] = useState(false);
+  const [orderNotes, setOrderNotes] = useState("");
   const [addOns, setAddOns] = useState<Record<string, boolean>>({});
   const [upSizeQty, setUpSizeQty] = useState(0);
   const [fabricExtra, setFabricExtra] = useState<"emboss" | "jacquard" | null>(
@@ -149,7 +147,6 @@ export function MedusaVariantConfigurator({
   const total = useMemo(() => {
     let sum = baseVariantUnit ?? 0;
     sum += collarExtra;
-    if (oversize) sum += oversizeSurcharge;
     sum += upSizeQty * upSizeUnit;
     if (fabricExtra === "emboss") sum += embossPrice;
     if (fabricExtra === "jacquard") sum += jacquardPrice;
@@ -163,7 +160,6 @@ export function MedusaVariantConfigurator({
   }, [
     baseVariantUnit,
     collarExtra,
-    oversize,
     upSizeQty,
     upSizeUnit,
     fabricExtra,
@@ -196,7 +192,11 @@ export function MedusaVariantConfigurator({
         `Kerah: *${collar.label}*${collar.surcharge ? ` (+${formatIdr(collar.surcharge)})` : ""}`,
       );
     }
-    lines.push(`Ukuran: *${size}*${oversize ? " + *Oversize*" : ""}`);
+    const trimmedNotes = orderNotes.trim();
+    if (trimmedNotes) {
+      lines.push("Catatan pemesanan:");
+      lines.push(trimmedNotes);
+    }
     lines.push(`Perkiraan total: *${formatIdr(total)}*`);
     lines.push("Mohon info MOQ dan jadwal. Terima kasih!");
     return lines.join("\n");
@@ -209,8 +209,7 @@ export function MedusaVariantConfigurator({
     baseVariantUnit,
     showCollar,
     collar,
-    size,
-    oversize,
+    orderNotes,
     total,
   ]);
 
@@ -251,8 +250,7 @@ export function MedusaVariantConfigurator({
       tier_name: tname,
       base_variant_unit_idr:
         baseVariantUnit !== null ? String(Math.round(baseVariantUnit)) : "0",
-      size,
-      oversize: oversize ? "yes" : "no",
+      order_notes: orderNotes.trim(),
       collar_id: showCollar ? resolvedCollarId : "",
       collar_label: showCollar ? (collar?.label ?? "") : "",
       fabric_extra: fabricExtra ?? "",
@@ -264,6 +262,17 @@ export function MedusaVariantConfigurator({
 
   function addToWebsiteCart() {
     if (!selected?.id || baseVariantUnit === null) return;
+    const trimmed = orderNotes.trim();
+    if (!trimmed) {
+      setCartError("Isi catatan pemesanan (misalnya daftar nama, nomor punggung, ukuran, atau instruksi khusus).");
+      return;
+    }
+    if (trimmed.length > MAX_ORDER_NOTES_CHARS) {
+      setCartError(
+        `Catatan pemesanan terlalu panjang (maks. ${MAX_ORDER_NOTES_CHARS.toLocaleString("id-ID")} karakter).`,
+      );
+      return;
+    }
     setCartError(null);
     startTransition(async () => {
       const res = await addMetroConfiguratorToCartAction({
@@ -400,43 +409,6 @@ export function MedusaVariantConfigurator({
 
       <div>
         <h2 className="font-display text-xl tracking-wide text-foreground">
-          Ukuran
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          S, M, L, XL, XXL, XXXL. Oversize: +{formatIdr(oversizeSurcharge)}.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {sizeOptions.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setSize(s)}
-              className={cn(
-                "min-w-[3rem] rounded-md border px-3 py-2 text-sm font-semibold transition-colors",
-                size === s
-                  ? "border-brand bg-brand/15 text-brand"
-                  : "border-white/15 text-muted hover:border-white/30 hover:text-foreground",
-              )}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-        <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3">
-          <input
-            type="checkbox"
-            checked={oversize}
-            onChange={(e) => setOversize(e.target.checked)}
-            className="size-4 accent-brand"
-          />
-          <span className="text-sm text-foreground">
-            Oversize (+{formatIdr(oversizeSurcharge)})
-          </span>
-        </label>
-      </div>
-
-      <div>
-        <h2 className="font-display text-xl tracking-wide text-foreground">
           Biaya tambahan & opsi
         </h2>
         <div className="mt-4 space-y-3">
@@ -551,9 +523,32 @@ export function MedusaVariantConfigurator({
         </div>
       </div>
 
+      <div>
+        <h2 className="font-display text-xl tracking-wide text-foreground">
+          Catatan pemesanan
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Misalnya daftar per pemain (nama, nomor punggung, ukuran) satu baris satu orang untuk
+          jersey tim, atau instruksi khusus lain. Contoh baris:{" "}
+          <span className="text-foreground/80">ANDI (49) (L)</span>
+        </p>
+        <textarea
+          value={orderNotes}
+          onChange={(e) => setOrderNotes(e.target.value)}
+          rows={8}
+          maxLength={MAX_ORDER_NOTES_CHARS}
+          placeholder={`ANDI (49) (L)\nBUDI (7) (M)\nDODI S (10) (L)`}
+          className="mt-4 w-full max-w-2xl resize-y rounded-lg border border-white/15 bg-background/80 px-3 py-2.5 text-sm text-foreground outline-none ring-brand/30 placeholder:text-muted focus:border-brand focus:ring-2"
+        />
+        <p className="mt-2 text-xs text-muted">
+          Wajib diisi sebelum tambah ke keranjang. Maks. {MAX_ORDER_NOTES_CHARS.toLocaleString("id-ID")}{" "}
+          karakter.
+        </p>
+      </div>
+
       <div className="rounded-xl border border-brand/25 bg-brand/5 p-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-brand">
-          Estimasi
+          Estimasi Per Produk
         </p>
         <p className="mt-2 font-display text-3xl text-foreground">{formatIdr(total)}</p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">

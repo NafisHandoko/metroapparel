@@ -91,11 +91,19 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     );
   }
 
-  const size = typeof body.metadata.size === "string" ? body.metadata.size : "";
-  if (!size.trim()) {
+  const orderNotes =
+    typeof body.metadata.order_notes === "string" ? body.metadata.order_notes : "";
+  const trimmedNotes = orderNotes.trim();
+  if (!trimmedNotes) {
     throw new MedusaError(
       MedusaError.Types.INVALID_DATA,
-      "Metadata ukuran wajib diisi.",
+      "Catatan pemesanan (order_notes) wajib diisi.",
+    );
+  }
+  if (trimmedNotes.length > 12_000) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "Catatan pemesanan terlalu panjang (maks. 12000 karakter).",
     );
   }
 
@@ -160,6 +168,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
   const enrichedMetadata: Record<string, string> = {
     ...body.metadata,
+    order_notes: trimmedNotes,
     metro_price_breakdown: JSON.stringify(breakdown),
   };
 

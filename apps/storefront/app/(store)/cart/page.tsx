@@ -38,10 +38,9 @@ function MetroLineConfigSummary({
   if (!hasMetro) return null;
 
   const tier = strMeta(m, "tier_name");
-  const size = strMeta(m, "size");
+  const orderNotes = strMeta(m, "order_notes");
   const collar = strMeta(m, "collar_label");
   const fabric = strMeta(m, "fabric_extra");
-  const oversize = m.oversize === "yes";
   const upRaw = m.up_size_qty;
   const upQty =
     typeof upRaw === "string"
@@ -53,9 +52,7 @@ function MetroLineConfigSummary({
 
   const rows: { label: string; value: string }[] = [];
   if (tier) rows.push({ label: "Paket", value: tier });
-  if (size) rows.push({ label: "Ukuran", value: size });
   if (collar) rows.push({ label: "Kerah", value: collar });
-  if (oversize) rows.push({ label: "Oversize", value: "Ya" });
   if (fabric) rows.push({ label: "Kain ekstra", value: fabric });
   if (upQty > 0) rows.push({ label: "Up size", value: `${upQty} kelipatan` });
   if (addonIds.length) {
@@ -65,17 +62,29 @@ function MetroLineConfigSummary({
     });
   }
 
-  if (!rows.length) return null;
+  if (!rows.length && !orderNotes) return null;
 
   return (
-    <dl className="mt-2 max-w-md space-y-1 text-xs text-muted">
-      {rows.map((r) => (
-        <div key={r.label} className="flex flex-wrap gap-x-2 gap-y-0.5">
-          <dt className="shrink-0 text-foreground/70">{r.label}:</dt>
-          <dd className="min-w-0 text-foreground/90">{r.value}</dd>
+    <div className="mt-2 max-w-2xl space-y-3 text-xs text-muted">
+      {rows.length ? (
+        <dl className="space-y-1">
+          {rows.map((r) => (
+            <div key={r.label} className="flex flex-wrap gap-x-2 gap-y-0.5">
+              <dt className="shrink-0 text-foreground/70">{r.label}:</dt>
+              <dd className="min-w-0 text-foreground/90">{r.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      {orderNotes ? (
+        <div>
+          <p className="text-foreground/70">Catatan pemesanan</p>
+          <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-md border border-white/10 bg-white/[0.03] px-2 py-2 text-foreground/90">
+            {orderNotes}
+          </pre>
         </div>
-      ))}
-    </dl>
+      ) : null}
+    </div>
   );
 }
 

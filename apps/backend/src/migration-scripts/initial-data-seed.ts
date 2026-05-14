@@ -91,7 +91,7 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
     title: "Jersey Atasan",
     categoryHandle: "custom-jersey",
     description:
-      "Produk utama: jersey bagian atas dengan tiga paket - Essential, Elite, dan Prime. Pilih kerah, ukuran, oversize, dan add-on; ringkasan bisa langsung dikirim ke WhatsApp.",
+      "Produk utama: jersey bagian atas dengan tiga paket - Essential, Elite, dan Prime. Pilih kerah dan add-on; daftar nama/nomor/ukuran per pemain ditulis di catatan pemesanan. Ringkasan bisa dikirim ke WhatsApp.",
     imageUrls: [
       "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=900&q=80",
     ],
@@ -106,7 +106,7 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
     title: "Jersey Satu Set",
     categoryHandle: "custom-jersey",
     description:
-      "Set lengkap atasan + celana: Regular (Basic), Standard (paling populer), Premium, dan Ultimate. Cocok untuk match day, liga, dan tim esports.",
+      "Set lengkap atasan + celana: Regular (Basic), Standard (paling populer), Premium, dan Ultimate. Cocok untuk match day, liga, dan tim esports. Daftar nama/nomor/ukuran per pemain ditulis di catatan pemesanan.",
     imageUrls: [
       "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=900&q=80",
     ],
@@ -126,7 +126,7 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
     title: "Training Pants",
     categoryHandle: "toko-metro",
     description:
-      "Celana training bahan Lotto: opsi full printing atau non printing. Pilih ukuran & add-on di bawah.",
+      "Celana training bahan Lotto: opsi full printing atau non printing. Tambahkan catatan pemesanan dan add-on di bawah.",
     imageUrls: [
       "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=900&q=80",
     ],
@@ -140,7 +140,7 @@ const METRO_PRODUCTS: MetroProductSeed[] = [
     title: "Jaket",
     categoryHandle: "toko-metro",
     description:
-      "Jaket bahan Lotto: varian printing atau non printing + bordir. Pilih paket, ukuran, dan opsi tambahan.",
+      "Jaket bahan Lotto: varian printing atau non printing + bordir. Pilih paket, isi catatan pemesanan, dan opsi tambahan.",
     imageUrls: [
       "https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=900&q=80",
     ],

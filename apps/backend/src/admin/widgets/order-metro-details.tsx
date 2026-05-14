@@ -103,8 +103,8 @@ const OrderMetroDetailsWidget = ({ data }: { data: OrderLike }) => {
           Konfigurasi Metro (dari pelanggan)
         </Heading>
         <Text size="small" className="text-ui-fg-subtle mt-1 max-w-2xl">
-          Ringkasan paket, kerah, ukuran, add-on, dan rincian harga per baris pesanan.
-          Data ini berasal dari checkout konfigurator — tidak perlu membuka metadata mentah.
+          Ringkasan paket, kerah, add-on, catatan pemesanan (nama / nomor / ukuran per pemain),
+          dan rincian harga per baris pesanan. Data ini berasal dari konfigurator storefront.
         </Text>
       </div>
 
@@ -118,10 +118,9 @@ const OrderMetroDetailsWidget = ({ data }: { data: OrderLike }) => {
           const qty = item.quantity ?? 1;
 
           const tierName = strMeta(m, "tier_name");
-          const size = strMeta(m, "size");
+          const orderNotes = strMeta(m, "order_notes");
           const collar = strMeta(m, "collar_label");
           const fabric = strMeta(m, "fabric_extra");
-          const oversize = m.oversize === "yes";
           const upQtyRaw = m.up_size_qty;
           const upQty =
             typeof upQtyRaw === "string"
@@ -149,19 +148,9 @@ const OrderMetroDetailsWidget = ({ data }: { data: OrderLike }) => {
                     <span className="text-ui-fg-muted">Paket:</span> {tierName}
                   </span>
                 ) : null}
-                {size ? (
-                  <span>
-                    <span className="text-ui-fg-muted">Ukuran:</span> {size}
-                  </span>
-                ) : null}
                 {collar ? (
                   <span>
                     <span className="text-ui-fg-muted">Kerah:</span> {collar}
-                  </span>
-                ) : null}
-                {oversize ? (
-                  <span>
-                    <span className="text-ui-fg-muted">Oversize:</span> Ya
                   </span>
                 ) : null}
                 {fabric ? (
@@ -183,6 +172,21 @@ const OrderMetroDetailsWidget = ({ data }: { data: OrderLike }) => {
                   </span>
                 ) : null}
               </div>
+
+              {orderNotes ? (
+                <div className="rounded-md border border-ui-border-base bg-ui-bg-subtle px-3 py-3">
+                  <Text
+                    size="xsmall"
+                    weight="plus"
+                    className="text-ui-fg-subtle uppercase tracking-wide"
+                  >
+                    Catatan pemesanan
+                  </Text>
+                  <pre className="mt-2 m-0 max-h-64 overflow-auto whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-ui-fg-base">
+                    {orderNotes}
+                  </pre>
+                </div>
+              ) : null}
 
               {breakdown ? (
                 <div className="rounded-md border border-ui-border-base bg-ui-bg-subtle px-3 py-3">
