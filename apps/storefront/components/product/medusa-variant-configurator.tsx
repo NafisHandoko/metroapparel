@@ -289,6 +289,12 @@ export function MedusaVariantConfigurator({
 
   function addToWebsiteCart() {
     if (!selected?.id || baseVariantUnit === null) return;
+    if (orderMode === "team" && !teamNotes.trim()) {
+      setCartError(
+        "Untuk pemesanan tim / banyak, isi dulu catatan pemesanan (daftar nama, nomor punggung, ukuran, atau ringkasan ukuran).",
+      );
+      return;
+    }
     setCartError(null);
     startTransition(async () => {
       const res = await addMetroConfiguratorToCartAction({
@@ -550,7 +556,10 @@ export function MedusaVariantConfigurator({
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <button
             type="button"
-            onClick={() => setOrderMode("single")}
+            onClick={() => {
+              setCartError(null);
+              setOrderMode("single");
+            }}
             className={cn(
               "rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
               orderMode === "single"
@@ -563,7 +572,10 @@ export function MedusaVariantConfigurator({
           </button>
           <button
             type="button"
-            onClick={() => setOrderMode("team")}
+            onClick={() => {
+              setCartError(null);
+              setOrderMode("team");
+            }}
             className={cn(
               "rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
               orderMode === "team"
@@ -627,9 +639,10 @@ export function MedusaVariantConfigurator({
             <textarea
               id="metro-team-notes"
               value={teamNotes}
-              onChange={(e) =>
-                setTeamNotes(e.target.value.slice(0, MAX_TEAM_NOTES_CHARS))
-              }
+              onChange={(e) => {
+                setCartError(null);
+                setTeamNotes(e.target.value.slice(0, MAX_TEAM_NOTES_CHARS));
+              }}
               rows={10}
               placeholder={`Tulis daftar nama, nomor punggung, ukuran, atau catatan lain untuk tim Anda…\nContoh:\nANDI (49) (L)\nBUDI (7) (M)\nDODI S (10) (L)\n...\natau\nS: 7, L: 3, XL: 2, ...`}
               className="mt-3 w-full resize-y rounded-lg border border-white/15 bg-background/80 px-3 py-2.5 text-sm text-foreground outline-none ring-brand/30 placeholder:text-muted focus:border-brand focus:ring-2"
