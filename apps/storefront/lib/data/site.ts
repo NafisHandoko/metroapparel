@@ -7,7 +7,7 @@ export const site = {
   name: "Metro Apparel",
   tagline: "Custom jersey & apparel produksi lokal, kualitas premium.",
   address: "Jl. Raya Mojowarno, Bedok, Bulurejo, Kec. Diwek, Kabupaten Jombang, Jawa Timur 61471",
-  email: "halo@metroapparel.id",
+  email: "metro.apparel24@gmail.com",
   phoneDisplay: "+62 812-3456-7890",
   social: {
     instagram: "https://www.instagram.com/metro_apprl",
@@ -16,8 +16,8 @@ export const site = {
 };
 
 export const stats = [
-  { value: "1000+", label: "Jersey telah diproduksi" },
-  { value: "50+", label: "Tim & komunitas mempercayai kami" },
+  { value: "5000+", label: "Jersey telah diproduksi" },
+  { value: "300+", label: "Tim & komunitas mempercayai kami" },
   { value: "7-14", label: "Hari produksi rata-rata" },
 ];
 

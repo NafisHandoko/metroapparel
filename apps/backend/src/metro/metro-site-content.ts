@@ -207,7 +207,7 @@ export function defaultMetroSiteContent(): MetroSiteContentV1 {
       tagline: "Custom jersey & apparel produksi lokal, kualitas premium.",
       address:
         "Jl. Raya Mojowarno, Bedok, Bulurejo, Kec. Diwek, Kabupaten Jombang, Jawa Timur 61471",
-      email: "halo@metroapparel.id",
+      email: "metro.apparel24@gmail.com",
       phoneDisplay: "+62 812-3456-7890",
       whatsappDigits: "6281332079137",
       social: {
