@@ -630,8 +630,8 @@ export function MedusaVariantConfigurator({
               onChange={(e) =>
                 setTeamNotes(e.target.value.slice(0, MAX_TEAM_NOTES_CHARS))
               }
-              rows={8}
-              placeholder="Tulis daftar nama, nomor punggung, ukuran, atau catatan lain untuk tim Anda…"
+              rows={10}
+              placeholder={`Tulis daftar nama, nomor punggung, ukuran, atau catatan lain untuk tim Anda…\nContoh:\nANDI (49) (L)\nBUDI (7) (M)\nDODI S (10) (L)\n...\natau\nS: 7, L: 3, XL: 2, ...`}
               className="mt-3 w-full resize-y rounded-lg border border-white/15 bg-background/80 px-3 py-2.5 text-sm text-foreground outline-none ring-brand/30 placeholder:text-muted focus:border-brand focus:ring-2"
             />
             <p className="mt-1 text-xs text-muted tabular-nums">
