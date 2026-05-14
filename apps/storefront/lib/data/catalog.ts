@@ -224,13 +224,13 @@ export type AdditionalOption = {
 /** Fallback bila API add-on gagal; sumber utama = Medusa Admin → Settings → Metro add-on. */
 export const additionalOptions: AdditionalOption[] = [
   { id: "3d-logo", label: "3D logo", price: 20_000 },
-  {
-    id: "up-size",
-    label: "Up size",
-    description: "Berlaku per kelipatan",
-    price: 10_000,
-    input: "quantity",
-  },
+  // {
+  //   id: "up-size",
+  //   label: "Up size",
+  //   description: "Berlaku per kelipatan",
+  //   price: 10_000,
+  //   input: "quantity",
+  // },
   { id: "long-sleeve", label: "Lengan panjang (long sleeve)", price: 10_000 },
   {
     id: "sponsor-front",
