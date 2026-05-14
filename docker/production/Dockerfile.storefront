@@ -34,16 +34,14 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-RUN npm install -g pnpm@10.11.1
-
 ENV NODE_ENV=production
 
-# Copy built application
-COPY --from=builder /app/apps/storefront/.next ./.next
-COPY --from=builder /app/apps/storefront/public ./public
-COPY --from=builder /app/apps/storefront/package.json ./package.json
-COPY --from=builder /app/apps/storefront/node_modules ./node_modules
+# Copy standalone build
+COPY --from=builder /app/apps/storefront/.next/standalone ./
+COPY --from=builder /app/apps/storefront/.next/static ./apps/storefront/.next/static
+COPY --from=builder /app/apps/storefront/public ./apps/storefront/public
 
 EXPOSE 8000
 
-CMD ["pnpm", "start"]
+# Standalone server runs with node directly
+CMD ["node", "apps/storefront/server.js"]

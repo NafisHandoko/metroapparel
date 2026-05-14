@@ -10,6 +10,7 @@ const S3_HOSTNAME = process.env.MEDUSA_CLOUD_S3_HOSTNAME
 const S3_PATHNAME = process.env.MEDUSA_CLOUD_S3_PATHNAME
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   images: {
     /**
      * Tanpa ini, optimizer `/_next/image` menolak URL yang setelah DNS resolve ke IP
@@ -57,7 +58,12 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "*.s3.amazonaws.com",
-      },  
+      },
+      {
+        protocol: "https",
+        hostname: "admin.metroapparel.nafishandoko.my.id",
+        pathname: "/**",
+      },
     ],
   },
 };
