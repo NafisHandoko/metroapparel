@@ -43,6 +43,7 @@ services:
       - AUTH_CORS=https://admin.metroapparel.nafishandoko.my.id
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=traefik_network"
       # Router untuk Admin Panel
       - "traefik.http.routers.medusa.rule=Host(`admin.metroapparel.nafishandoko.my.id`)"
       - "traefik.http.routers.medusa.entrypoints=websecure"
@@ -81,6 +82,7 @@ services:
       - NEXT_PUBLIC_DEFAULT_REGION=id
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=traefik_network"
       # Router untuk Storefront
       - "traefik.http.routers.storefront.rule=Host(`metroapparel.nafishandoko.my.id`)"
       - "traefik.http.routers.storefront.entrypoints=websecure"
