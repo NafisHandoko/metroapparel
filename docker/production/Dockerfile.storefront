@@ -44,4 +44,5 @@ COPY --from=builder /app/apps/storefront/public ./apps/storefront/public
 EXPOSE 8000
 
 # Standalone server runs with node directly
+ENV PORT=8000
 CMD ["node", "apps/storefront/server.js"]

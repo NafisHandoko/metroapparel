@@ -74,6 +74,7 @@ services:
       medusa:
         condition: service_healthy
     environment:
+      - PORT=8000
       - NODE_ENV=production
       - MEDUSA_BACKEND_INTERNAL_URL=http://medusa:9000
       - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}
