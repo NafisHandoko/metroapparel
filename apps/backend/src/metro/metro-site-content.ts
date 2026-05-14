@@ -271,7 +271,7 @@ export function defaultMetroSiteContent(): MetroSiteContentV1 {
       },
       {
         q: "Area pengiriman?",
-        a: "Seluruh Indonesia via kurir. Untuk Jabodetabek tersedia opsi pickup di workshop kami.",
+        a: "Kota Jombang dan sekitarnya. Tersedia juga opsi pickup di workshop kami di Jombang.",
       },
     ],
     heroBackgroundUrls: [],
