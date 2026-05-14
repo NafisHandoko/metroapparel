@@ -1,0 +1,100 @@
+name: metroapparel-prod
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: metroapparel_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: medusa-store
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    container_name: metroapparel_redis
+    restart: always
+    networks:
+      - internal
+
+  medusa:
+    build:
+      context: ../..
+      dockerfile: docker/production/Dockerfile.backend
+    container_name: metroapparel_medusa
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/medusa-store
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - COOKIE_SECRET=${COOKIE_SECRET}
+      - STORE_CORS=https://metroapparel.nafishandoko.my.id
+      - ADMIN_CORS=https://admin.metroapparel.nafishandoko.my.id
+      - AUTH_CORS=https://admin.metroapparel.nafishandoko.my.id
+    labels:
+      - "traefik.enable=true"
+      # Router untuk Admin Panel
+      - "traefik.http.routers.medusa.rule=Host(`admin.metroapparel.nafishandoko.my.id`)"
+      - "traefik.http.routers.medusa.entrypoints=websecure"
+      - "traefik.http.routers.medusa.tls.certresolver=letsencrypt"
+      - "traefik.http.services.medusa.loadbalancer.server.port=9000"
+    networks:
+      - internal
+      - traefik_network
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:9000/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  storefront:
+    build:
+      context: ../..
+      dockerfile: docker/production/Dockerfile.storefront
+      args:
+        - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}
+        - NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://admin.metroapparel.nafishandoko.my.id
+        - NEXT_PUBLIC_BASE_URL=https://metroapparel.nafishandoko.my.id
+        - NEXT_PUBLIC_DEFAULT_REGION=id
+    container_name: metroapparel_storefront
+    restart: always
+    depends_on:
+      medusa:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - MEDUSA_BACKEND_INTERNAL_URL=http://medusa:9000
+      - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}
+      - NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://admin.metroapparel.nafishandoko.my.id
+      - NEXT_PUBLIC_BASE_URL=https://metroapparel.nafishandoko.my.id
+      - NEXT_PUBLIC_DEFAULT_REGION=id
+    labels:
+      - "traefik.enable=true"
+      # Router untuk Storefront
+      - "traefik.http.routers.storefront.rule=Host(`metroapparel.nafishandoko.my.id`)"
+      - "traefik.http.routers.storefront.entrypoints=websecure"
+      - "traefik.http.routers.storefront.tls.certresolver=letsencrypt"
+      - "traefik.http.services.storefront.loadbalancer.server.port=8000"
+    networks:
+      - internal
+      - traefik_network
+
+volumes:
+  postgres_data:
+
+networks:
+  internal:
+    driver: bridge
+  traefik_network:
+    external: true
