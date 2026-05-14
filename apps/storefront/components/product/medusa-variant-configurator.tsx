@@ -31,6 +31,13 @@ import { useSiteContent } from "@/components/site-content-provider";
 import { getWhatsAppLink } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 
+/** Placeholder ukuran untuk mode tim — backend wajib `size` non-kosong; harga tidak memakai field ini. */
+const TEAM_SIZE_PLACEHOLDER = "—";
+
+const MAX_TEAM_NOTES_CHARS = 12000;
+
+type OrderMode = "single" | "team";
+
 type MedusaVariantConfiguratorProps = {
   product: HttpTypes.StoreProduct;
   addonOptions: AdditionalOption[];
@@ -105,6 +112,8 @@ export function MedusaVariantConfigurator({
   const [collarId, setCollarId] = useState(
     () => collarOptions[0]?.id ?? "o-neck",
   );
+  const [orderMode, setOrderMode] = useState<OrderMode>("team");
+  const [teamNotes, setTeamNotes] = useState("");
   const [size, setSize] = useState<SizeOption>("M");
   const [oversize, setOversize] = useState(false);
   const [addOns, setAddOns] = useState<Record<string, boolean>>({});
@@ -146,10 +155,12 @@ export function MedusaVariantConfigurator({
 
   const baseVariantUnit = selected ? variantCalculatedAmount(selected) : null;
 
+  const effectiveOversize = orderMode === "single" && oversize;
+
   const total = useMemo(() => {
     let sum = baseVariantUnit ?? 0;
     sum += collarExtra;
-    if (oversize) sum += oversizeSurcharge;
+    if (effectiveOversize) sum += oversizeSurcharge;
     sum += upSizeQty * upSizeUnit;
     if (fabricExtra === "emboss") sum += embossPrice;
     if (fabricExtra === "jacquard") sum += jacquardPrice;
@@ -163,7 +174,7 @@ export function MedusaVariantConfigurator({
   }, [
     baseVariantUnit,
     collarExtra,
-    oversize,
+    effectiveOversize,
     upSizeQty,
     upSizeUnit,
     fabricExtra,
@@ -196,7 +207,14 @@ export function MedusaVariantConfigurator({
         `Kerah: *${collar.label}*${collar.surcharge ? ` (+${formatIdr(collar.surcharge)})` : ""}`,
       );
     }
-    lines.push(`Ukuran: *${size}*${oversize ? " + *Oversize*" : ""}`);
+    lines.push(
+      `Tipe pemesanan: *${orderMode === "single" ? "Satuan" : "Tim / banyak"}*`,
+    );
+    if (orderMode === "single") {
+      lines.push(`Ukuran: *${size}*${oversize ? " + *Oversize*" : ""}`);
+    } else if (teamNotes.trim()) {
+      lines.push(`Daftar / catatan:\n${teamNotes.trim()}`);
+    }
     lines.push(`Perkiraan total: *${formatIdr(total)}*`);
     lines.push("Mohon info MOQ dan jadwal. Terima kasih!");
     return lines.join("\n");
@@ -209,6 +227,8 @@ export function MedusaVariantConfigurator({
     baseVariantUnit,
     showCollar,
     collar,
+    orderMode,
+    teamNotes,
     size,
     oversize,
     total,
@@ -243,6 +263,9 @@ export function MedusaVariantConfigurator({
 
     const { tierId: tid, tierName: tname } = inferPackageFromVariant(selected);
 
+    const mode: OrderMode = orderMode;
+    const notesTrim = teamNotes.slice(0, MAX_TEAM_NOTES_CHARS).trimEnd();
+
     return {
       product_name: product.title ?? "",
       product_handle: productHandle,
@@ -251,8 +274,10 @@ export function MedusaVariantConfigurator({
       tier_name: tname,
       base_variant_unit_idr:
         baseVariantUnit !== null ? String(Math.round(baseVariantUnit)) : "0",
-      size,
-      oversize: oversize ? "yes" : "no",
+      metro_order_mode: mode,
+      metro_order_notes: mode === "team" ? notesTrim : "",
+      size: mode === "single" ? size : TEAM_SIZE_PLACEHOLDER,
+      oversize: mode === "single" && oversize ? "yes" : "no",
       collar_id: showCollar ? resolvedCollarId : "",
       collar_label: showCollar ? (collar?.label ?? "") : "",
       fabric_extra: fabricExtra ?? "",
@@ -400,43 +425,6 @@ export function MedusaVariantConfigurator({
 
       <div>
         <h2 className="font-display text-xl tracking-wide text-foreground">
-          Ukuran
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          S, M, L, XL, XXL, XXXL. Oversize: +{formatIdr(oversizeSurcharge)}.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {sizeOptions.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setSize(s)}
-              className={cn(
-                "min-w-[3rem] rounded-md border px-3 py-2 text-sm font-semibold transition-colors",
-                size === s
-                  ? "border-brand bg-brand/15 text-brand"
-                  : "border-white/15 text-muted hover:border-white/30 hover:text-foreground",
-              )}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-        <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3">
-          <input
-            type="checkbox"
-            checked={oversize}
-            onChange={(e) => setOversize(e.target.checked)}
-            className="size-4 accent-brand"
-          />
-          <span className="text-sm text-foreground">
-            Oversize (+{formatIdr(oversizeSurcharge)})
-          </span>
-        </label>
-      </div>
-
-      <div>
-        <h2 className="font-display text-xl tracking-wide text-foreground">
           Biaya tambahan & opsi
         </h2>
         <div className="mt-4 space-y-3">
@@ -551,9 +539,111 @@ export function MedusaVariantConfigurator({
         </div>
       </div>
 
+      <div>
+        <h2 className="font-display text-xl tracking-wide text-foreground">
+          Cara memesan
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Satuan: satu ukuran per baris keranjang. Tim / banyak: tulis daftar nama, nomor punggung,
+          dan ukuran (atau ringkasan ukuran) di kolom catatan.
+        </p>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setOrderMode("single")}
+            className={cn(
+              "rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
+              orderMode === "single"
+                ? "border-brand bg-brand/10 text-foreground"
+                : "border-white/10 text-muted hover:border-white/25 hover:text-foreground",
+            )}
+          >
+            <span className="font-semibold">Satuan</span>
+            <span className="mt-0.5 block text-xs text-muted">Satu potong, pilih ukuran di bawah</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setOrderMode("team")}
+            className={cn(
+              "rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
+              orderMode === "team"
+                ? "border-brand bg-brand/10 text-foreground"
+                : "border-white/10 text-muted hover:border-white/25 hover:text-foreground",
+            )}
+          >
+            <span className="font-semibold">Tim / banyak</span>
+            <span className="mt-0.5 block text-xs text-muted">Daftar pemain atau ringkasan ukuran</span>
+          </button>
+        </div>
+
+        {orderMode === "single" ? (
+          <div className="mt-8">
+            <h2 className="font-display text-xl tracking-wide text-foreground">Ukuran</h2>
+            <p className="mt-1 text-sm text-muted">
+              S, M, L, XL, XXL, XXXL. Oversize: +{formatIdr(oversizeSurcharge)}.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {sizeOptions.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setSize(s)}
+                  className={cn(
+                    "min-w-[3rem] rounded-md border px-3 py-2 text-sm font-semibold transition-colors",
+                    size === s
+                      ? "border-brand bg-brand/15 text-brand"
+                      : "border-white/15 text-muted hover:border-white/30 hover:text-foreground",
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3">
+              <input
+                type="checkbox"
+                checked={oversize}
+                onChange={(e) => setOversize(e.target.checked)}
+                className="size-4 accent-brand"
+              />
+              <span className="text-sm text-foreground">
+                Oversize (+{formatIdr(oversizeSurcharge)})
+              </span>
+            </label>
+          </div>
+        ) : (
+          <div className="mt-8">
+            <label htmlFor="metro-team-notes" className="font-display text-xl tracking-wide text-foreground">
+              Catatan pemesanan
+            </label>
+            <p className="mt-1 text-sm text-muted">
+              Contoh jersey:{" "}
+              <span className="font-mono text-xs text-foreground/80">
+                ANDI (49) (L) / BUDI (7) (M)
+              </span>
+              . Contoh non-custom:{" "}
+              <span className="font-mono text-xs text-foreground/80">M: 7, L: 3, XL: 2</span>.
+            </p>
+            <textarea
+              id="metro-team-notes"
+              value={teamNotes}
+              onChange={(e) =>
+                setTeamNotes(e.target.value.slice(0, MAX_TEAM_NOTES_CHARS))
+              }
+              rows={8}
+              placeholder="Tulis daftar nama, nomor punggung, ukuran, atau catatan lain untuk tim Anda…"
+              className="mt-3 w-full resize-y rounded-lg border border-white/15 bg-background/80 px-3 py-2.5 text-sm text-foreground outline-none ring-brand/30 placeholder:text-muted focus:border-brand focus:ring-2"
+            />
+            <p className="mt-1 text-xs text-muted tabular-nums">
+              {teamNotes.length}/{MAX_TEAM_NOTES_CHARS} karakter
+            </p>
+          </div>
+        )}
+      </div>
+
       <div className="rounded-xl border border-brand/25 bg-brand/5 p-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-brand">
-          Estimasi
+          Estimasi Per Produk
         </p>
         <p className="mt-2 font-display text-3xl text-foreground">{formatIdr(total)}</p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
