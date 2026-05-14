@@ -1,0 +1,43 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+RUN npm install -g pnpm@10.11.1
+
+# Copy dependency files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY apps/backend/package.json ./apps/backend/
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY apps/backend ./apps/backend
+
+# Build the backend
+WORKDIR /app/apps/backend
+RUN pnpm build
+
+# Production image
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+RUN npm install -g pnpm@10.11.1
+
+# Copy built application
+COPY --from=builder /app/apps/backend ./apps/backend
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+
+WORKDIR /app/apps/backend
+
+EXPOSE 9000
+
+# Production start script
+COPY docker/production/start-backend.sh /start.sh
+RUN chmod +x /start.sh
+
+CMD ["/start.sh"]

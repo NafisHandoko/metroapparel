@@ -1,0 +1,1012 @@
+import { MedusaContainer } from "@medusajs/framework";
+
+import {
+  ContainerRegistrationKeys,
+  ModuleRegistrationName,
+  Modules,
+  ProductStatus,
+} from "@medusajs/framework/utils";
+import {
+  createApiKeysWorkflow,
+  createProductCategoriesWorkflow,
+  createProductsWorkflow,
+  createRegionsWorkflow,
+  createSalesChannelsWorkflow,
+  createShippingOptionsWorkflow,
+  createStockLocationsWorkflow,
+  createStoresWorkflow,
+  createTaxRegionsWorkflow,
+  linkSalesChannelsToApiKeyWorkflow,
+  linkSalesChannelsToStockLocationWorkflow,
+  updateProductsWorkflow,
+  updateStoresWorkflow,
+} from "@medusajs/medusa/core-flows";
+
+import {
+  METRO_ADDON_RULES_METADATA_KEY,
+  defaultMetroAddonRulesPayload,
+  serializeMetroAddonRulesPayload,
+} from "../metro/metro-addon-rules";
+import {
+  METRO_COLLAR_RULES_METADATA_KEY,
+  defaultMetroCollarRulesPayload,
+  serializeMetroCollarRulesPayload,
+} from "../metro/metro-collar-rules";
+import {
+  hasAnySiteContentMetadata,
+  splitSiteContentDefaultsForSeed,
+} from "../metro/metro-site-content";
+
+const COUNTRY_ID = "id";
+
+/** Nama stabil agar seed idempotent (hindari duplikat channel/key tiap `docker up`). */
+const METRO_SEED_SALES_CHANNEL_NAME = "Metro Apparel Store";
+const METRO_WORKSHOP_LOCATION_NAME = "Metro Workshop";
+const METRO_FULFILLMENT_SET_NAME = "Metro delivery";
+/** Fulfillment set bertipe `pickup` - muncul sebagai blok Pickup terpisah di Admin lokasi. */
+const METRO_PICKUP_FULFILLMENT_SET_NAME = "Metro pickup";
+const METRO_PICKUP_SERVICE_ZONE_NAME = "Zona pickup workshop";
+const METRO_STORE_NAME = "Metro Apparel";
+/** Nama opsi di DB - dipakai seed idempotent & label di toko. */
+const METRO_SHIPPING_OPTION_REGULER = "Pengiriman reguler (seluruh Kota Jombang)";
+const METRO_SHIPPING_OPTION_PICKUP = "Pickup di workshop";
+
+function errorMessage(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === "object" && e !== null && "message" in e) {
+    return String((e as { message: unknown }).message);
+  }
+  try {
+    return JSON.stringify(e);
+  } catch {
+    return String(e);
+  }
+}
+
+/**
+ * Seed katalog: kategori toko (Custom Jersey / Toko Metro) + produk/varian/harga di Medusa.
+ * Nama nilai opsi & harga seed diselaraskan dengan `apps/storefront/lib/data/catalog.ts`.
+ * Setelah produk ada, bila `metadata.metro_option_details_json` masih kosong, seed menulis
+ * bullet fitur per nilai opsi «Paket» (salinan literal array `features` tier dari catalog).
+ */
+const METRO_CATEGORIES = [
+  { name: "Custom Jersey", handle: "custom-jersey" },
+  { name: "Toko Metro", handle: "toko-metro" },
+] as const;
+
+type TierRow = { id: string; name: string; price: number };
+
+type MetroProductSeed = {
+  handle: string;
+  title: string;
+  categoryHandle: (typeof METRO_CATEGORIES)[number]["handle"];
+  description: string;
+  imageUrls: string[];
+  tiers: TierRow[];
+};
+
+const METRO_PRODUCTS: MetroProductSeed[] = [
+  {
+    handle: "jersey-atasan",
+    title: "Jersey Atasan",
+    categoryHandle: "custom-jersey",
+    description:
+      "Produk utama: jersey bagian atas dengan tiga paket - Essential, Elite, dan Prime. Pilih kerah, ukuran, oversize, dan add-on; ringkasan bisa langsung dikirim ke WhatsApp.",
+    imageUrls: [
+      "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=900&q=80",
+    ],
+    tiers: [
+      { id: "essential", name: "Essential", price: 60_000 },
+      { id: "elite", name: "Elite", price: 90_000 },
+      { id: "prime", name: "Prime", price: 110_000 },
+    ],
+  },
+  {
+    handle: "jersey-satu-set",
+    title: "Jersey Satu Set",
+    categoryHandle: "custom-jersey",
+    description:
+      "Set lengkap atasan + celana: Regular (Basic), Standard (paling populer), Premium, dan Ultimate. Cocok untuk match day, liga, dan tim esports.",
+    imageUrls: [
+      "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=900&q=80",
+    ],
+    tiers: [
+      { id: "regular", name: "Regular (Basic)", price: 95_000 },
+      { id: "standard", name: "Standard", price: 125_000 },
+      { id: "premium", name: "Premium (Advanced)", price: 135_000 },
+      {
+        id: "ultimate",
+        name: "Ultimate (Professional)",
+        price: 170_000,
+      },
+    ],
+  },
+  {
+    handle: "training-pants",
+    title: "Training Pants",
+    categoryHandle: "toko-metro",
+    description:
+      "Celana training bahan Lotto: opsi full printing atau non printing. Pilih ukuran & add-on di bawah.",
+    imageUrls: [
+      "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=900&q=80",
+    ],
+    tiers: [
+      { id: "tp-full", name: "Full printing", price: 95_000 },
+      { id: "tp-non", name: "Non printing", price: 75_000 },
+    ],
+  },
+  {
+    handle: "jaket",
+    title: "Jaket",
+    categoryHandle: "toko-metro",
+    description:
+      "Jaket bahan Lotto: varian printing atau non printing + bordir. Pilih paket, ukuran, dan opsi tambahan.",
+    imageUrls: [
+      "https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=900&q=80",
+    ],
+    tiers: [
+      { id: "jk-print", name: "Printing", price: 175_000 },
+      { id: "jk-non", name: "Non printing + bordir", price: 130_000 },
+    ],
+  },
+  {
+    handle: "short-pants",
+    title: "Short Pants",
+    categoryHandle: "toko-metro",
+    description: "Celana pendek Lotto: full printing atau print samping.",
+    imageUrls: [
+      "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=900&q=80",
+    ],
+    tiers: [
+      { id: "sp-full", name: "Full printing", price: 60_000 },
+      { id: "sp-side", name: "Print samping", price: 50_000 },
+    ],
+  },
+  {
+    handle: "polo",
+    title: "Polo",
+    categoryHandle: "toko-metro",
+    description:
+      "Polo bordir material CVC 24S - untuk corporate, sekolah, dan komunitas.",
+    imageUrls: [
+      "https://images.unsplash.com/photo-1622445275571-3f7462c0068c?w=900&q=80",
+    ],
+    tiers: [{ id: "polo-bordir", name: "Polo bordir", price: 90_000 }],
+  },
+];
+
+/** Sama key dengan admin widget & storefront `metro-option-details.ts`. */
+const METRO_OPTION_DETAILS_JSON_KEY = "metro_option_details_json";
+
+/**
+ * Bullet per nilai opsi "Paket" — salinan literal dari `apps/storefront/lib/data/catalog.ts`
+ * (`jerseyTopTiers`, `jerseySetTiers`, `trainingPantsTiers`, `jacketTiers`, `shortPantsTiers`, `poloTiers`).
+ * Key luar = `MetroProductSeed.handle`; key dalam = string nilai opsi seed (nama tier).
+ */
+const METRO_SEED_PACKAGE_FEATURES_BY_PRODUCT_HANDLE: Record<
+  string,
+  Record<string, string[]>
+> = {
+  "jersey-atasan": {
+    Essential: [
+      "Atasan print depan",
+      "Logo, nama, dan nomor punggung DTF/Poliflex",
+      "Kerah basic",
+    ],
+    Elite: [
+      "Atasan full printing",
+      "Kerah basic",
+      "Pola potongan basic",
+      "Bahan premium",
+    ],
+    Prime: [
+      "Atasan full printing",
+      "Kerah variatif",
+      "Pola potongan variatif",
+      "Bahan premium",
+    ],
+  },
+  "jersey-satu-set": {
+    "Regular (Basic)": [
+      "DTF/Poliflex sublim",
+      "Dryfit standard sport",
+      "Atasan & bawahan non printing",
+      "Nama, nomor, dan logo sablon DTF/Poliflex",
+      "Dryfit basic milano",
+      "Kerah basic V-neck / O-neck",
+    ],
+    Standard: [
+      "Printing atasan",
+      "Dryfit premium",
+      "Atasan full printing",
+      "Bawahan non printing",
+      "Basic kerah",
+      "Premium dryfit",
+    ],
+    "Premium (Advanced)": [
+      "Full printing atas bawah",
+      "Kerah variatif",
+      "Premium dryfit",
+      "Pola variatif & double stitch",
+      "Bahan premium",
+    ],
+    "Ultimate (Professional)": [
+      "Full printing atas bawah",
+      "Kerah variatif",
+      "Premium dryfit",
+      "Kerah, atasan, dan bawahan pola variatif",
+      "3D logo",
+      "Kain emboss/jacquard & double stitch",
+      "Foto studio",
+    ],
+  },
+  "training-pants": {
+    "Full printing": ["Full printing", "Material: Lotto"],
+    "Non printing": ["Non printing", "Material: Lotto"],
+  },
+  jaket: {
+    Printing: ["Printing", "Material: Lotto"],
+    "Non printing + bordir": ["Non printing + bordir", "Material: Lotto"],
+  },
+  "short-pants": {
+    "Full printing": ["Full printing", "Material: Lotto"],
+    "Print samping": ["Print samping", "Material: Lotto"],
+  },
+  polo: {
+    "Polo bordir": ["Polo bordir", "Material: CVC 24S"],
+  },
+};
+
+type ProductOptionRow = { id?: string; title?: string | null };
+type ProductForOptionDetailsSeed = {
+  id: string;
+  handle?: string | null;
+  metadata?: Record<string, unknown> | null;
+  options?: ProductOptionRow[] | null;
+};
+
+async function seedMetroOptionDetailsIfMissing(
+  container: MedusaContainer,
+  query: {
+    graph: (args: {
+      entity: string;
+      fields: string[];
+      filters?: Record<string, unknown>;
+    }) => Promise<{ data?: unknown }>;
+  },
+  logger: { info: (msg: string) => void; warn: (msg: string) => void }
+) {
+  const updates: { id: string; metadata: Record<string, unknown> }[] = [];
+
+  for (const handle of METRO_PRODUCTS.map((p) => p.handle)) {
+    const featuresByValue =
+      METRO_SEED_PACKAGE_FEATURES_BY_PRODUCT_HANDLE[handle];
+    if (!featuresByValue) continue;
+
+    const { data: products } = await query.graph({
+      entity: "product",
+      fields: ["id", "handle", "metadata", "options.id", "options.title"],
+      filters: { handle },
+    });
+    const row = products?.[0] as ProductForOptionDetailsSeed | undefined;
+    if (!row?.id) continue;
+
+    const existing = row.metadata?.[METRO_OPTION_DETAILS_JSON_KEY];
+    if (existing != null && String(existing).trim() !== "") continue;
+
+    const paketOpt = row.options?.find((o) => o.title?.trim() === "Paket");
+    if (!paketOpt?.id) {
+      logger.warn(
+        `Seed ${METRO_OPTION_DETAILS_JSON_KEY}: produk "${handle}" tanpa opsi "Paket".`
+      );
+      continue;
+    }
+
+    const doc = {
+      v: 1 as const,
+      byOption: {
+        [paketOpt.id]: { ...featuresByValue },
+      },
+    };
+    const prev =
+      row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+        ? { ...row.metadata }
+        : {};
+    updates.push({
+      id: row.id,
+      metadata: {
+        ...prev,
+        [METRO_OPTION_DETAILS_JSON_KEY]: JSON.stringify(doc),
+      },
+    });
+  }
+
+  if (updates.length === 0) {
+    logger.info(
+      `Metro seed: ${METRO_OPTION_DETAILS_JSON_KEY} sudah ada pada semua produk katalog — dilewati.`
+    );
+    return;
+  }
+
+  try {
+    await updateProductsWorkflow(container).run({
+      input: { products: updates },
+    });
+    logger.info(
+      `Metro seed: ${METRO_OPTION_DETAILS_JSON_KEY} ditulis untuk ${updates.length} produk (fitur tier = catalog).`
+    );
+  } catch (e) {
+    logger.warn(
+      `updateProductsWorkflow (${METRO_OPTION_DETAILS_JSON_KEY}): ${errorMessage(e)}`
+    );
+  }
+}
+
+/** Satu varian per kombinasi nilai opsi (mis. satu opsi "Paket" → satu varian per tier). */
+function buildVariants(product: MetroProductSeed): {
+  title: string;
+  sku: string;
+  options: Record<string, string>;
+  prices: { amount: number; currency_code: string }[];
+  manage_inventory: boolean;
+}[] {
+  return product.tiers.map((tier) => ({
+    title: tier.name,
+    sku: `${product.handle}-${tier.id}`.toUpperCase(),
+    options: {
+      Paket: tier.name,
+    },
+    prices: [{ amount: tier.price, currency_code: "idr" }],
+    manage_inventory: false,
+  }));
+}
+
+type RegionQueryRow = {
+  id: string;
+  countries?: { iso_2?: string | null }[] | null;
+};
+
+/** Negara hanya boleh satu region; seed bisa dijalankan ulang tanpa error duplikat. */
+async function findRegionWithCountry(
+  query: {
+    graph: (args: {
+      entity: string;
+      fields: string[];
+    }) => Promise<{ data?: RegionQueryRow[] | null }>;
+  },
+  iso2: string
+): Promise<{ id: string } | null> {
+  const { data: regions } = await query.graph({
+    entity: "region",
+    fields: ["id", "countries.iso_2"],
+  });
+  if (!regions?.length) return null;
+  const want = iso2.toLowerCase();
+  for (const r of regions) {
+    const hit = r.countries?.some(
+      (c) => c?.iso_2 && c.iso_2.toLowerCase() === want
+    );
+    if (hit) return { id: r.id };
+  }
+  return null;
+}
+
+type SalesChannelRow = { id: string; name?: string; description?: string | null };
+type ApiKeyRow = { id: string; type?: string; title?: string };
+type StockLocationRow = { id: string; name?: string };
+type FulfillmentSetRow = {
+  id: string;
+  name?: string;
+  type?: string | null;
+  service_zones?: { id: string; name?: string }[] | null;
+};
+
+export default async function initial_data_seed({
+  container,
+}: {
+  container: MedusaContainer;
+}) {
+  const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
+  const link = container.resolve(ContainerRegistrationKeys.LINK);
+  const query = container.resolve(ContainerRegistrationKeys.QUERY);
+  const fulfillmentModuleService = container.resolve(
+    ModuleRegistrationName.FULFILLMENT
+  );
+
+  logger.info("Seeding Metro Apparel store data...");
+
+  const { data: existingChannels } = await query.graph({
+    entity: "sales_channel",
+    fields: ["id", "name", "description"],
+  });
+  const channelRows = (existingChannels ?? []) as SalesChannelRow[];
+  let defaultSalesChannel =
+    channelRows.find((c) => c.name === METRO_SEED_SALES_CHANNEL_NAME) ??
+    channelRows.find((c) => c.description === "Metro Apparel") ??
+    null;
+
+  if (!defaultSalesChannel) {
+    const {
+      result: [created],
+    } = await createSalesChannelsWorkflow(container).run({
+      input: {
+        salesChannelsData: [
+          {
+            name: METRO_SEED_SALES_CHANNEL_NAME,
+            description: "Metro Apparel",
+          },
+        ],
+      },
+    });
+    defaultSalesChannel = created as SalesChannelRow;
+    logger.info(`Sales channel dibuat: ${defaultSalesChannel.id}`);
+  } else {
+    logger.info(
+      `Sales channel dipakai ulang: ${defaultSalesChannel.id} (${defaultSalesChannel.name})`
+    );
+  }
+
+  const { data: existingKeys } = await query.graph({
+    entity: "api_key",
+    fields: ["id", "type", "title"],
+  });
+  const keyRows = (existingKeys ?? []) as ApiKeyRow[];
+  let publishableApiKey = keyRows.find((k) => k.type === "publishable") ?? null;
+
+  if (!publishableApiKey) {
+    const {
+      result: [createdKey],
+    } = await createApiKeysWorkflow(container).run({
+      input: {
+        api_keys: [
+          {
+            title: "Default Publishable API Key",
+            type: "publishable",
+            created_by: "",
+          },
+        ],
+      },
+    });
+    publishableApiKey = createdKey as ApiKeyRow;
+    logger.info(`Publishable API key dibuat: ${publishableApiKey.id}`);
+  } else {
+    logger.info(
+      `Publishable API key dipakai ulang: ${publishableApiKey.id} (${publishableApiKey.title})`
+    );
+  }
+
+  try {
+    await linkSalesChannelsToApiKeyWorkflow(container).run({
+      input: {
+        id: publishableApiKey.id,
+        add: [defaultSalesChannel.id],
+      },
+    });
+  } catch (e) {
+    logger.warn(
+      `linkSalesChannelsToApiKeyWorkflow: ${errorMessage(e)} (biasanya sudah terhubung)`
+    );
+  }
+
+  const { data: existingStores } = await query.graph({
+    entity: "store",
+    fields: ["id", "name"],
+  });
+  const hasMetroStore = (existingStores ?? []).some(
+    (s: { name?: string }) => s.name === METRO_STORE_NAME
+  );
+
+  if (!hasMetroStore) {
+    await createStoresWorkflow(container).run({
+      input: {
+        stores: [
+          {
+            name: METRO_STORE_NAME,
+            supported_currencies: [
+              {
+                currency_code: "idr",
+                is_default: true,
+              },
+            ],
+            default_sales_channel_id: defaultSalesChannel.id,
+          },
+        ],
+      },
+    });
+    logger.info(`Store "${METRO_STORE_NAME}" dibuat.`);
+  } else {
+    logger.info(`Store "${METRO_STORE_NAME}" sudah ada; melewati createStoresWorkflow.`);
+  }
+
+  const { data: allStoresForAddons } = await query.graph({
+    entity: "store",
+    fields: ["id", "metadata", "name"],
+  });
+  const metroStoreRow = (
+    (allStoresForAddons ?? []) as {
+      id?: string;
+      metadata?: Record<string, unknown> | null;
+      name?: string;
+    }[]
+  ).find((s) => s.name === METRO_STORE_NAME) ?? allStoresForAddons?.[0];
+  const needsAddonRules =
+    metroStoreRow?.id &&
+    metroStoreRow.metadata?.[METRO_ADDON_RULES_METADATA_KEY] == null;
+  const needsCollarRules =
+    metroStoreRow?.id &&
+    metroStoreRow.metadata?.[METRO_COLLAR_RULES_METADATA_KEY] == null;
+  const needsSiteContent =
+    metroStoreRow?.id && !hasAnySiteContentMetadata(metroStoreRow.metadata);
+  if (needsAddonRules || needsCollarRules || needsSiteContent) {
+    const base = { ...(metroStoreRow!.metadata ?? {}) };
+    if (needsAddonRules) {
+      base[METRO_ADDON_RULES_METADATA_KEY] = serializeMetroAddonRulesPayload(
+        defaultMetroAddonRulesPayload(),
+      );
+    }
+    if (needsCollarRules) {
+      base[METRO_COLLAR_RULES_METADATA_KEY] = serializeMetroCollarRulesPayload(
+        defaultMetroCollarRulesPayload(),
+      );
+    }
+    if (needsSiteContent) {
+      Object.assign(base, splitSiteContentDefaultsForSeed());
+    }
+    await updateStoresWorkflow(container).run({
+      input: {
+        selector: { id: metroStoreRow!.id },
+        update: { metadata: base },
+      },
+    });
+    if (needsAddonRules) {
+      logger.info("Metadata add-on global (metro_addon_rules) diset ke default seed.");
+    }
+    if (needsCollarRules) {
+      logger.info("Metadata kerah global (metro_collar_rules) diset ke default seed.");
+    }
+    if (needsSiteContent) {
+      logger.info(
+        "Metadata konten toko (metro_site_*_json per bagian) diset ke default seed.",
+      );
+    }
+  }
+
+  logger.info("Seeding region (Indonesia / IDR)...");
+  let region = await findRegionWithCountry(query, COUNTRY_ID);
+  if (region) {
+    logger.info(
+      `Region untuk negara "${COUNTRY_ID}" sudah ada (${region.id}); melewati createRegionsWorkflow.`
+    );
+  } else {
+    const { result: regionResult } = await createRegionsWorkflow(container).run({
+      input: {
+        regions: [
+          {
+            name: "Indonesia",
+            currency_code: "idr",
+            countries: [COUNTRY_ID],
+            payment_providers: ["pp_system_default"],
+          },
+        ],
+      },
+    });
+    region = regionResult[0];
+  }
+
+  try {
+    await createTaxRegionsWorkflow(container).run({
+      input: [
+        {
+          country_code: COUNTRY_ID,
+          provider_id: "tp_system",
+        },
+      ],
+    });
+  } catch (e) {
+    logger.warn(
+      `createTaxRegionsWorkflow dilewati atau gagal (biasanya tax region sudah ada): ${errorMessage(e)}`
+    );
+  }
+
+  logger.info("Seeding stock location...");
+  const { data: existingStockLocs } = await query.graph({
+    entity: "stock_location",
+    fields: ["id", "name"],
+  });
+  const locRows = (existingStockLocs ?? []) as StockLocationRow[];
+  let stockLocationRow = locRows.find((l) => l.name === METRO_WORKSHOP_LOCATION_NAME);
+
+  if (!stockLocationRow) {
+    const { result: stockLocationResult } = await createStockLocationsWorkflow(
+      container
+    ).run({
+      input: {
+        locations: [
+          {
+            name: METRO_WORKSHOP_LOCATION_NAME,
+            address: {
+              city: "Jombang",
+              country_code: "ID",
+              address_1: "Jl. Raya Mojowarno, Bedok, Bulurejo, Kec. Diwek, Kabupaten Jombang, Jawa Timur 61471",
+            },
+          },
+        ],
+      },
+    });
+    stockLocationRow = stockLocationResult[0] as StockLocationRow;
+    logger.info(`Lokasi stok dibuat: ${stockLocationRow.id}`);
+  } else {
+    logger.info(`Lokasi stok dipakai ulang: ${stockLocationRow.id}`);
+  }
+
+  const stockLocation = { id: stockLocationRow.id };
+
+  try {
+    await link.create({
+      [Modules.STOCK_LOCATION]: {
+        stock_location_id: stockLocation.id,
+      },
+      [Modules.FULFILLMENT]: {
+        fulfillment_provider_id: "manual_manual",
+      },
+    });
+  } catch (e) {
+    logger.warn(
+      `Link stock_location <-> fulfillment provider: ${errorMessage(e)} (biasanya sudah ada)`
+    );
+  }
+
+  const { data: shippingProfileResult } = await query.graph({
+    entity: "shipping_profile",
+    fields: ["id"],
+  });
+  const shippingProfile = shippingProfileResult[0];
+
+  const { data: existingFulfillmentSets } = await query.graph({
+    entity: "fulfillment_set",
+    fields: ["id", "name", "type", "service_zones.id", "service_zones.name"],
+  });
+  const fsRows = (existingFulfillmentSets ?? []) as FulfillmentSetRow[];
+
+  let fulfillmentSet =
+    fsRows.find(
+      (f) => f.name === METRO_FULFILLMENT_SET_NAME && f.type === "shipping"
+    ) ?? fsRows.find((f) => f.name === METRO_FULFILLMENT_SET_NAME);
+
+  if (!fulfillmentSet) {
+    const created = await fulfillmentModuleService.createFulfillmentSets({
+      name: METRO_FULFILLMENT_SET_NAME,
+      type: "shipping",
+      service_zones: [
+        {
+          name: "Indonesia",
+          geo_zones: [
+            {
+              country_code: COUNTRY_ID,
+              type: "country",
+            },
+          ],
+        },
+      ],
+    });
+    fulfillmentSet = created as unknown as FulfillmentSetRow;
+    logger.info(`Fulfillment set (shipping) dibuat: ${fulfillmentSet.id}`);
+  } else {
+    logger.info(`Fulfillment set (shipping) dipakai ulang: ${fulfillmentSet.id}`);
+  }
+
+  const shippingServiceZoneId = fulfillmentSet.service_zones?.[0]?.id;
+  if (!shippingServiceZoneId) {
+    throw new Error(
+      `Fulfillment set "${METRO_FULFILLMENT_SET_NAME}" tidak punya service_zone; periksa data DB.`
+    );
+  }
+
+  try {
+    await link.create({
+      [Modules.STOCK_LOCATION]: {
+        stock_location_id: stockLocation.id,
+      },
+      [Modules.FULFILLMENT]: {
+        fulfillment_set_id: fulfillmentSet.id,
+      },
+    });
+  } catch (e) {
+    logger.warn(
+      `Link stock_location <-> fulfillment_set (shipping): ${errorMessage(e)} (biasanya sudah ada)`
+    );
+  }
+
+  let pickupFulfillmentSet = fsRows.find(
+    (f) => f.name === METRO_PICKUP_FULFILLMENT_SET_NAME && f.type === "pickup"
+  );
+
+  if (!pickupFulfillmentSet) {
+    const createdPickup = await fulfillmentModuleService.createFulfillmentSets({
+      name: METRO_PICKUP_FULFILLMENT_SET_NAME,
+      type: "pickup",
+      service_zones: [
+        {
+          name: METRO_PICKUP_SERVICE_ZONE_NAME,
+          geo_zones: [
+            {
+              country_code: COUNTRY_ID,
+              type: "country",
+            },
+          ],
+        },
+      ],
+    });
+    pickupFulfillmentSet = createdPickup as unknown as FulfillmentSetRow;
+    logger.info(`Fulfillment set (pickup) dibuat: ${pickupFulfillmentSet.id}`);
+  } else {
+    logger.info(`Fulfillment set (pickup) dipakai ulang: ${pickupFulfillmentSet.id}`);
+  }
+
+  const pickupServiceZoneId = pickupFulfillmentSet.service_zones?.[0]?.id;
+  if (!pickupServiceZoneId) {
+    throw new Error(
+      `Fulfillment set "${METRO_PICKUP_FULFILLMENT_SET_NAME}" tidak punya service_zone; periksa data DB.`
+    );
+  }
+
+  try {
+    await link.create({
+      [Modules.STOCK_LOCATION]: {
+        stock_location_id: stockLocation.id,
+      },
+      [Modules.FULFILLMENT]: {
+        fulfillment_set_id: pickupFulfillmentSet.id,
+      },
+    });
+  } catch (e) {
+    logger.warn(
+      `Link stock_location <-> fulfillment_set (pickup): ${errorMessage(e)} (biasanya sudah ada)`
+    );
+  }
+
+  const { data: existingShippingOptions } = await query.graph({
+    entity: "shipping_option",
+    fields: ["id", "name", "service_zone_id"],
+  });
+  const allOpts = (existingShippingOptions ?? []) as {
+    id: string;
+    name?: string;
+    service_zone_id?: string;
+  }[];
+
+  const misplacedPickupOnShipping = allOpts.filter(
+    (o) =>
+      o.name === METRO_SHIPPING_OPTION_PICKUP &&
+      o.service_zone_id === shippingServiceZoneId
+  );
+  if (misplacedPickupOnShipping.length > 0) {
+    logger.warn(
+      `Opsi "${METRO_SHIPPING_OPTION_PICKUP}" masih tertaut ke zona pengiriman (Indonesia). Hapus manual di Admin -> Lokasi -> ${METRO_WORKSHOP_LOCATION_NAME} -> bagian Shipping agar tidak dobel; seed sekarang memakai blok Pickup + zona "${METRO_PICKUP_SERVICE_ZONE_NAME}".`
+    );
+  }
+
+  const inShippingZone = allOpts.filter(
+    (o) => o.service_zone_id === shippingServiceZoneId
+  );
+  const inPickupZone = allOpts.filter(
+    (o) => o.service_zone_id === pickupServiceZoneId
+  );
+  const hasReguler = inShippingZone.some(
+    (o) => o.name === METRO_SHIPPING_OPTION_REGULER
+  );
+  const hasPickupOnPickupZone = inPickupZone.some(
+    (o) => o.name === METRO_SHIPPING_OPTION_PICKUP
+  );
+
+  const optionRules = [
+    {
+      attribute: "enabled_in_store",
+      value: "true",
+      operator: "eq" as const,
+    },
+    {
+      attribute: "is_return",
+      value: "false",
+      operator: "eq" as const,
+    },
+  ];
+
+  type SeedShippingOptionInput = {
+    name: string;
+    price_type: "flat";
+    provider_id: string;
+    service_zone_id: string;
+    shipping_profile_id: string;
+    type: { label: string; description: string; code: string };
+    prices: Array<
+      | { currency_code: string; amount: number }
+      | { region_id: string; amount: number }
+    >;
+    rules: typeof optionRules;
+  };
+
+  const shippingToCreate: SeedShippingOptionInput[] = [];
+
+  if (!hasReguler) {
+    shippingToCreate.push({
+      name: METRO_SHIPPING_OPTION_REGULER,
+      price_type: "flat",
+      provider_id: "manual_manual",
+      service_zone_id: shippingServiceZoneId,
+      shipping_profile_id: shippingProfile.id,
+      type: {
+        label: "Reguler",
+        description: "Kurir ke seluruh Kota Jombang.",
+        code: "standard",
+      },
+      prices: [
+        { currency_code: "idr", amount: 25_000 },
+        { region_id: region.id, amount: 25_000 },
+      ],
+      rules: optionRules,
+    });
+  }
+
+  if (shippingToCreate.length > 0) {
+    try {
+      await createShippingOptionsWorkflow(container).run({
+        input: shippingToCreate as never,
+      });
+      logger.info(
+        `Opsi shipping baru: ${shippingToCreate.map((o) => o.name).join(", ")}`
+      );
+    } catch (e) {
+      logger.warn(`createShippingOptionsWorkflow (shipping): ${errorMessage(e)}`);
+    }
+  } else {
+    logger.info(
+      `Opsi "${METRO_SHIPPING_OPTION_REGULER}" di zona pengiriman sudah ada - dilewati.`
+    );
+  }
+
+  const pickupToCreate: SeedShippingOptionInput[] = [];
+  if (!hasPickupOnPickupZone) {
+    pickupToCreate.push({
+      name: METRO_SHIPPING_OPTION_PICKUP,
+      price_type: "flat",
+      provider_id: "manual_manual",
+      service_zone_id: pickupServiceZoneId,
+      shipping_profile_id: shippingProfile.id,
+      type: {
+        label: "Pickup",
+        description: "Ambil sendiri di lokasi Metro.",
+        code: "pickup",
+      },
+      prices: [
+        { currency_code: "idr", amount: 0 },
+        { region_id: region.id, amount: 0 },
+      ],
+      rules: optionRules,
+    });
+  }
+
+  if (pickupToCreate.length > 0) {
+    try {
+      await createShippingOptionsWorkflow(container).run({
+        input: pickupToCreate as never,
+      });
+      logger.info(
+        `Opsi pickup baru: ${pickupToCreate.map((o) => o.name).join(", ")}`
+      );
+    } catch (e) {
+      logger.warn(`createShippingOptionsWorkflow (pickup): ${errorMessage(e)}`);
+    }
+  } else {
+    logger.info(
+      `Opsi "${METRO_SHIPPING_OPTION_PICKUP}" di zona pickup sudah ada - dilewati.`
+    );
+  }
+
+  try {
+    await linkSalesChannelsToStockLocationWorkflow(container).run({
+      input: {
+        id: stockLocation.id,
+        add: [defaultSalesChannel.id],
+      },
+    });
+  } catch (e) {
+    logger.warn(
+      `linkSalesChannelsToStockLocationWorkflow: ${errorMessage(e)} (biasanya sudah terhubung)`
+    );
+  }
+
+  logger.info("Seeding product categories & Metro catalog...");
+
+  type CatRow = { id: string; name?: string; handle?: string };
+  const { data: existingCats } = await query.graph({
+    entity: "product_category",
+    fields: ["id", "handle", "name"],
+  });
+
+  const categoryByHandle = new Map<string, string>();
+  for (const row of (existingCats ?? []) as CatRow[]) {
+    const match = METRO_CATEGORIES.find(
+      (mc) => mc.handle === row.handle || mc.name === row.name
+    );
+    if (match) categoryByHandle.set(match.handle, row.id);
+  }
+
+  const missingCategories = METRO_CATEGORIES.filter(
+    (mc) => !categoryByHandle.has(mc.handle)
+  );
+
+  if (missingCategories.length > 0) {
+    const { result: categoryResult } = await createProductCategoriesWorkflow(
+      container
+    ).run({
+      input: {
+        product_categories: missingCategories.map((c) => ({
+          name: c.name,
+          handle: c.handle,
+          is_active: true,
+        })),
+      },
+    });
+
+    for (const c of categoryResult) {
+      const row = c as CatRow;
+      const match = METRO_CATEGORIES.find(
+        (mc) => mc.handle === row.handle || mc.name === row.name
+      );
+      if (match) categoryByHandle.set(match.handle, row.id);
+    }
+  }
+
+  const { data: existingProducts } = await query.graph({
+    entity: "product",
+    fields: ["handle"],
+  });
+  const existingHandles = new Set(
+    (existingProducts ?? [])
+      .map((p: { handle?: string }) => p.handle)
+      .filter(Boolean)
+  );
+
+  const productsToSeed = METRO_PRODUCTS.filter((p) => !existingHandles.has(p.handle));
+
+  if (productsToSeed.length === 0) {
+    logger.info("Produk Metro sudah ada; melewati createProductsWorkflow.");
+  } else {
+    const productsInput = productsToSeed.map((p) => {
+      const categoryId = categoryByHandle.get(p.categoryHandle);
+      if (!categoryId) {
+        throw new Error(`Missing category for handle ${p.categoryHandle}`);
+      }
+
+      const tierNames = p.tiers.map((t) => t.name);
+      const variants = buildVariants(p);
+
+      return {
+        title: p.title,
+        handle: p.handle,
+        description: p.description,
+        status: ProductStatus.PUBLISHED,
+        weight: 400,
+        shipping_profile_id: shippingProfile.id,
+        category_ids: [categoryId],
+        images: p.imageUrls.map((url) => ({ url })),
+        options: [{ title: "Paket", values: tierNames }],
+        variants,
+        sales_channels: [{ id: defaultSalesChannel.id }],
+      };
+    });
+
+    await createProductsWorkflow(container).run({
+      input: {
+        products: productsInput,
+      },
+    });
+  }
+
+  await seedMetroOptionDetailsIfMissing(container, query, logger);
+
+  logger.info(
+    `Metro seed complete. Publishable key id: ${publishableApiKey.id} (link in Admin API keys).`
+  );
+}

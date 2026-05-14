@@ -1,0 +1,3 @@
+# Dev lokal: `pnpm docker:up` — menyertakan stack dari `docker/development/`.
+include:
+  - path: docker/development/docker-compose.yml
