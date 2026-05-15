@@ -198,44 +198,57 @@ Edit `docker/production/docker-compose.yml` dan ganti domain sesuai kebutuhan:
 
 Update juga environment variables `STORE_CORS`, `ADMIN_CORS`, `AUTH_CORS`, `NEXT_PUBLIC_MEDUSA_BACKEND_URL`, dan `NEXT_PUBLIC_BASE_URL`.
 
-### Step 6: Deploy Medusa Backend
+### Step 6: Hapus Local Environment Files
+
+**PENTING**: Hapus semua file `.env*.local` di folder apps sebelum deploy. File-file ini bisa meng-override environment variables production dan menyebabkan build gagal.
 
 ```bash
 cd ~/metroapparel
 
-# Load environment variables
-export $(grep -v '^#' .env.production | xargs)
+# Hapus local env files yang bisa mengganggu production build
+rm -f apps/storefront/.env.local
+rm -f apps/storefront/.env.production.local
+rm -f apps/backend/.env.local
+rm -f apps/backend/.env.production.local
+```
+
+### Step 7: Deploy Medusa Backend
+
+```bash
+cd ~/metroapparel
 
 # Start database dan redis
-docker compose -f docker/production/docker-compose.yml up -d postgres redis
+docker compose --env-file .env.production -f docker/production/docker-compose.yml up -d postgres redis
 
 # Tunggu postgres ready
 sleep 10
 
 # Build dan start Medusa
-docker compose -f docker/production/docker-compose.yml up -d medusa --build
+docker compose --env-file .env.production -f docker/production/docker-compose.yml up -d medusa --build
 
 # Monitor logs
-docker compose -f docker/production/docker-compose.yml logs -f medusa
+docker compose --env-file .env.production -f docker/production/docker-compose.yml logs -f medusa
 ```
 
 Tunggu sampai muncul log `Server is ready on port: 9000`.
 
-### Step 7: Buat Admin User
+> **Note**: Selalu gunakan flag `--env-file .env.production` untuk memastikan environment variables terload dengan benar, terutama saat menggunakan `sudo`.
+
+### Step 8: Buat Admin User
 
 ```bash
-docker compose -f docker/production/docker-compose.yml exec medusa \
+docker compose --env-file .env.production -f docker/production/docker-compose.yml exec medusa \
   pnpm medusa user -e admin@yourdomain.com -p <PASSWORD_ADMIN>
 ```
 
-### Step 8: Ambil Publishable Key
+### Step 9: Ambil Publishable Key
 
 1. Akses `https://admin.yourdomain.com/app`
 2. Login dengan credentials yang dibuat
 3. Pergi ke **Settings → API Key Management → Publishable API Keys**
 4. Copy publishable key
 
-### Step 9: Update .env.production
+### Step 10: Update .env.production
 
 ```bash
 nano .env.production
@@ -244,46 +257,47 @@ nano .env.production
 NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=pk_xxxxx
 ```
 
-### Step 10: Deploy Storefront
+### Step 11: Deploy Storefront
 
 ```bash
-# Reload environment variables
-export $(grep -v '^#' .env.production | xargs)
+cd ~/metroapparel
 
 # Build dan start storefront
-docker compose -f docker/production/docker-compose.yml up -d storefront --build
+docker compose --env-file .env.production -f docker/production/docker-compose.yml up -d storefront --build
 
 # Monitor logs
-docker compose -f docker/production/docker-compose.yml logs -f storefront
+docker compose --env-file .env.production -f docker/production/docker-compose.yml logs -f storefront
 ```
 
 Tunggu sampai muncul log `Ready in Xms`.
 
-### Step 11: Verifikasi
+### Step 12: Verifikasi
 
 ```bash
 # Cek semua services running
-docker compose -f docker/production/docker-compose.yml ps
+docker compose --env-file .env.production -f docker/production/docker-compose.yml ps
 
 # Test endpoints
 curl -I https://admin.yourdomain.com/health
-curl -I https://store.yourdomain.com
+curl -I https://yourdomain.com
 ```
 
 ---
 
 ## Production Commands
 
+Semua perintah menggunakan `--env-file .env.production` untuk memastikan environment variables terload dengan benar.
+
 | Command | Description |
 |---------|-------------|
-| `docker compose -f docker/production/docker-compose.yml up -d` | Start semua services |
-| `docker compose -f docker/production/docker-compose.yml down` | Stop semua services |
-| `docker compose -f docker/production/docker-compose.yml logs -f` | View all logs |
-| `docker compose -f docker/production/docker-compose.yml logs -f medusa` | View Medusa logs |
-| `docker compose -f docker/production/docker-compose.yml logs -f storefront` | View Storefront logs |
-| `docker compose -f docker/production/docker-compose.yml up -d --build medusa` | Rebuild Medusa |
-| `docker compose -f docker/production/docker-compose.yml up -d --build storefront` | Rebuild Storefront |
-| `docker compose -f docker/production/docker-compose.yml exec medusa sh` | Shell ke Medusa container |
+| `docker compose --env-file .env.production -f docker/production/docker-compose.yml up -d` | Start semua services |
+| `docker compose --env-file .env.production -f docker/production/docker-compose.yml down` | Stop semua services |
+| `docker compose --env-file .env.production -f docker/production/docker-compose.yml logs -f` | View all logs |
+| `docker compose --env-file .env.production -f docker/production/docker-compose.yml logs -f medusa` | View Medusa logs |
+| `docker compose --env-file .env.production -f docker/production/docker-compose.yml logs -f storefront` | View Storefront logs |
+| `docker compose --env-file .env.production -f docker/production/docker-compose.yml up -d --build medusa` | Rebuild Medusa |
+| `docker compose --env-file .env.production -f docker/production/docker-compose.yml up -d --build storefront` | Rebuild Storefront |
+| `docker compose --env-file .env.production -f docker/production/docker-compose.yml exec medusa sh` | Shell ke Medusa container |
 
 ---
 
@@ -300,6 +314,30 @@ curl -I https://store.yourdomain.com
    docker network inspect traefik_network
    ```
 3. Pastikan label `traefik.docker.network=traefik_network` ada di docker-compose
+
+### 502 Bad Gateway khusus Storefront (Admin Panel berfungsi)
+
+**Penyebab**: File `.env.production.local` atau `.env.local` di folder `apps/storefront/` meng-override environment variables production saat build Next.js.
+
+**Solusi**:
+1. Hapus file local env yang mengganggu:
+   ```bash
+   rm -f apps/storefront/.env.local
+   rm -f apps/storefront/.env.production.local
+   ```
+2. Rebuild storefront:
+   ```bash
+   docker compose --env-file .env.production -f docker/production/docker-compose.yml up -d storefront --build --force-recreate
+   ```
+
+### Environment Variables tidak terload (warning "variable is not set")
+
+**Penyebab**: Perintah `export $(grep ...)` tidak bekerja dengan `sudo` karena sudo tidak preserve environment variables user.
+
+**Solusi**: Selalu gunakan flag `--env-file`:
+```bash
+docker compose --env-file .env.production -f docker/production/docker-compose.yml up -d
+```
 
 ### 504 Gateway Timeout
 
