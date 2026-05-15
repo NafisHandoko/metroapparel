@@ -34,11 +34,24 @@ function MetroLineConfigSummary({
   const hasMetro =
     typeof m.metro_price_breakdown === "string" ||
     strMeta(m, "product_handle") ||
-    strMeta(m, "tier_name");
+    strMeta(m, "tier_name") ||
+    strMeta(m, "metro_order_mode");
   if (!hasMetro) return null;
 
+  const orderMode = strMeta(m, "metro_order_mode");
+  const orderModeLabel =
+    orderMode === "single"
+      ? "Satuan"
+      : orderMode === "team"
+        ? "Tim / banyak"
+        : null;
+  const orderNotesTrim =
+    typeof m.metro_order_notes === "string" ? m.metro_order_notes.trim() : "";
+
   const tier = strMeta(m, "tier_name");
-  const size = strMeta(m, "size");
+  const sizeRaw = strMeta(m, "size");
+  const showSizeRow =
+    orderMode !== "team" && sizeRaw && sizeRaw !== "—" && sizeRaw !== "-";
   const collar = strMeta(m, "collar_label");
   const fabric = strMeta(m, "fabric_extra");
   const oversize = m.oversize === "yes";
@@ -52,8 +65,17 @@ function MetroLineConfigSummary({
   const addonIds = parseAddonIds(m.addons_json);
 
   const rows: { label: string; value: string }[] = [];
+  if (orderModeLabel) {
+    rows.push({ label: "Tipe pemesanan", value: orderModeLabel });
+  }
+  if (orderMode === "team") {
+    rows.push({
+      label: "Catatan",
+      value: orderNotesTrim || "(belum diisi)",
+    });
+  }
   if (tier) rows.push({ label: "Paket", value: tier });
-  if (size) rows.push({ label: "Ukuran", value: size });
+  if (showSizeRow && sizeRaw) rows.push({ label: "Ukuran", value: sizeRaw });
   if (collar) rows.push({ label: "Kerah", value: collar });
   if (oversize) rows.push({ label: "Oversize", value: "Ya" });
   if (fabric) rows.push({ label: "Kain ekstra", value: fabric });
@@ -69,10 +91,18 @@ function MetroLineConfigSummary({
 
   return (
     <dl className="mt-2 max-w-md space-y-1 text-xs text-muted">
-      {rows.map((r) => (
-        <div key={r.label} className="flex flex-wrap gap-x-2 gap-y-0.5">
+      {rows.map((r, i) => (
+        <div key={`${r.label}-${i}`} className="flex flex-wrap gap-x-2 gap-y-0.5">
           <dt className="shrink-0 text-foreground/70">{r.label}:</dt>
-          <dd className="min-w-0 text-foreground/90">{r.value}</dd>
+          <dd
+            className={
+              r.label === "Catatan"
+                ? "min-w-0 max-w-full whitespace-pre-wrap break-words text-foreground/90"
+                : "min-w-0 text-foreground/90"
+            }
+          >
+            {r.value}
+          </dd>
         </div>
       ))}
     </dl>
@@ -156,9 +186,7 @@ export default async function CartPage() {
                 ) : null}
                 <MetroLineConfigSummary metadata={item.metadata} />
                 <MetroLineBreakdown metadata={item.metadata} />
-                <p className="mt-2 text-sm text-brand">
-                  {formatIdr(item.subtotal ?? 0)} · Qty {item.quantity}
-                </p>
+                <p className="mt-2 text-sm text-brand">{formatIdr(item.subtotal ?? 0)}</p>
               </div>
               <CartLineRemove lineId={item.id} />
             </li>

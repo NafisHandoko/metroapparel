@@ -68,7 +68,8 @@ function isMetroLineItem(item: OrderItemLike): boolean {
     m.metro_price_breakdown ||
       m.tier_id ||
       m.tier_name ||
-      m.product_handle,
+      m.product_handle ||
+      m.metro_order_mode,
   );
 }
 
@@ -103,8 +104,9 @@ const OrderMetroDetailsWidget = ({ data }: { data: OrderLike }) => {
           Konfigurasi Metro (dari pelanggan)
         </Heading>
         <Text size="small" className="text-ui-fg-subtle mt-1 max-w-2xl">
-          Ringkasan paket, kerah, ukuran, add-on, dan rincian harga per baris pesanan.
-          Data ini berasal dari checkout konfigurator — tidak perlu membuka metadata mentah.
+          Ringkasan paket, kerah, ukuran (satuan), tipe pemesanan (satuan / tim), catatan tim, add-on,
+          dan rincian harga per baris pesanan. Data ini berasal dari checkout konfigurator — tidak
+          perlu membuka metadata mentah.
         </Text>
       </div>
 
@@ -118,7 +120,20 @@ const OrderMetroDetailsWidget = ({ data }: { data: OrderLike }) => {
           const qty = item.quantity ?? 1;
 
           const tierName = strMeta(m, "tier_name");
-          const size = strMeta(m, "size");
+          const orderMode = strMeta(m, "metro_order_mode");
+          const orderModeLabel =
+            orderMode === "single"
+              ? "Satuan"
+              : orderMode === "team"
+                ? "Tim / banyak"
+                : null;
+          const orderNotesTrim =
+            typeof m.metro_order_notes === "string"
+              ? m.metro_order_notes.trim()
+              : "";
+          const sizeRaw = strMeta(m, "size");
+          const showSize =
+            orderMode !== "team" && sizeRaw && sizeRaw !== "—" && sizeRaw !== "-";
           const collar = strMeta(m, "collar_label");
           const fabric = strMeta(m, "fabric_extra");
           const oversize = m.oversize === "yes";
@@ -138,20 +153,36 @@ const OrderMetroDetailsWidget = ({ data }: { data: OrderLike }) => {
                   {productTitle}
                   {variantPart ? ` · ${variantPart}` : ""}
                 </Text>
-                <Text size="xsmall" className="text-ui-fg-muted">
-                  Jumlah baris: {qty}
-                </Text>
+                {qty > 1 ? (
+                  <Text size="xsmall" className="text-ui-fg-muted">
+                    Kuantitas item: {qty}
+                  </Text>
+                ) : null}
               </div>
 
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-ui-fg-subtle">
+                {orderModeLabel ? (
+                  <span>
+                    <span className="text-ui-fg-muted">Tipe pemesanan:</span>{" "}
+                    {orderModeLabel}
+                  </span>
+                ) : null}
+                {orderMode === "team" ? (
+                  <span className="min-w-0 basis-full">
+                    <span className="text-ui-fg-muted">Catatan pelanggan:</span>
+                    <span className="mt-1 block whitespace-pre-wrap break-words rounded-md border border-ui-border-base bg-ui-bg-subtle px-2 py-2 text-ui-fg-base">
+                      {orderNotesTrim || "(belum diisi)"}
+                    </span>
+                  </span>
+                ) : null}
                 {tierName ? (
                   <span>
                     <span className="text-ui-fg-muted">Paket:</span> {tierName}
                   </span>
                 ) : null}
-                {size ? (
+                {showSize && sizeRaw ? (
                   <span>
-                    <span className="text-ui-fg-muted">Ukuran:</span> {size}
+                    <span className="text-ui-fg-muted">Ukuran:</span> {sizeRaw}
                   </span>
                 ) : null}
                 {collar ? (

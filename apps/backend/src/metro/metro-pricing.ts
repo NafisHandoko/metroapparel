@@ -224,13 +224,13 @@ export type AdditionalOption = {
 /** Default add-on bila produk tidak punya `metro_addon_catalog` di metadata. */
 export const defaultAdditionalOptions: AdditionalOption[] = [
   { id: "3d-logo", label: "3D logo", price: 20_000 },
-  {
-    id: "up-size",
-    label: "Up size",
-    description: "Berlaku per kelipatan",
-    price: 10_000,
-    input: "quantity",
-  },
+  // {
+  //   id: "up-size",
+  //   label: "Up size",
+  //   description: "Berlaku per kelipatan",
+  //   price: 10_000,
+  //   input: "quantity",
+  // },
   { id: "long-sleeve", label: "Lengan panjang (long sleeve)", price: 10_000 },
   {
     id: "sponsor-front",
