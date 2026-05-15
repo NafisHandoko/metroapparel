@@ -366,6 +366,29 @@ labels:
 1. Pastikan `MEDUSA_BACKEND_INTERNAL_URL=http://medusa:9000` di storefront
 2. Test koneksi: `docker exec metroapparel_storefront wget -qO- http://medusa:9000/health`
 
+### URL Gambar Upload mengarah ke localhost:9000
+
+**Penyebab**: Medusa tidak dikonfigurasi dengan `backendUrl`, sehingga URL file uploads menggunakan default `http://localhost:9000`.
+
+**Solusi**: Pastikan environment variable `MEDUSA_BACKEND_URL` diset di Medusa container:
+```yaml
+environment:
+  - MEDUSA_BACKEND_URL=https://admin.yourdomain.com
+```
+
+Dan pastikan `medusa-config.ts` menggunakan variabel tersebut:
+```typescript
+projectConfig: {
+  backendUrl: process.env.MEDUSA_BACKEND_URL,
+  // ...
+}
+```
+
+Setelah perubahan, rebuild Medusa:
+```bash
+docker compose --env-file .env.production -f docker/production/docker-compose.yml up -d medusa --build --force-recreate
+```
+
 ### Module not found di Storefront
 
 **Penyebab**: pnpm workspace symlinks tidak bekerja di Docker.
@@ -390,6 +413,7 @@ const nextConfig: NextConfig = {
 | `REDIS_URL` | Redis connection string | Yes |
 | `JWT_SECRET` | Secret untuk JWT tokens | Yes |
 | `COOKIE_SECRET` | Secret untuk cookies | Yes |
+| `MEDUSA_BACKEND_URL` | URL publik Medusa untuk generate URL file uploads | Yes (production) |
 | `STORE_CORS` | Allowed origins untuk storefront | Yes |
 | `ADMIN_CORS` | Allowed origins untuk admin panel | Yes |
 | `AUTH_CORS` | Allowed origins untuk authentication | Yes |

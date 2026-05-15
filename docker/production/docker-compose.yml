@@ -38,6 +38,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET}
       - COOKIE_SECRET=${COOKIE_SECRET}
+      - MEDUSA_BACKEND_URL=https://admin.metroapparel.web.id
       - STORE_CORS=https://metroapparel.web.id
       - ADMIN_CORS=https://admin.metroapparel.web.id
       - AUTH_CORS=https://admin.metroapparel.web.id
