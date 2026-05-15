@@ -38,14 +38,14 @@ services:
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET}
       - COOKIE_SECRET=${COOKIE_SECRET}
-      - STORE_CORS=https://metroapparel.nafishandoko.my.id
-      - ADMIN_CORS=https://admin.metroapparel.nafishandoko.my.id
-      - AUTH_CORS=https://admin.metroapparel.nafishandoko.my.id
+      - STORE_CORS=https://metroapparel.web.id
+      - ADMIN_CORS=https://admin.metroapparel.web.id
+      - AUTH_CORS=https://admin.metroapparel.web.id
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_network"
       # Router untuk Admin Panel
-      - "traefik.http.routers.medusa.rule=Host(`admin.metroapparel.nafishandoko.my.id`)"
+      - "traefik.http.routers.medusa.rule=Host(`admin.metroapparel.web.id`)"
       - "traefik.http.routers.medusa.entrypoints=websecure"
       - "traefik.http.routers.medusa.tls.certresolver=letsencrypt"
       - "traefik.http.services.medusa.loadbalancer.server.port=9000"
@@ -65,8 +65,8 @@ services:
       dockerfile: docker/production/Dockerfile.storefront
       args:
         - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}
-        - NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://admin.metroapparel.nafishandoko.my.id
-        - NEXT_PUBLIC_BASE_URL=https://metroapparel.nafishandoko.my.id
+        - NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://admin.metroapparel.web.id
+        - NEXT_PUBLIC_BASE_URL=https://metroapparel.web.id
         - NEXT_PUBLIC_DEFAULT_REGION=id
     container_name: metroapparel_storefront
     restart: always
@@ -78,14 +78,14 @@ services:
       - NODE_ENV=production
       - MEDUSA_BACKEND_INTERNAL_URL=http://medusa:9000
       - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}
-      - NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://admin.metroapparel.nafishandoko.my.id
-      - NEXT_PUBLIC_BASE_URL=https://metroapparel.nafishandoko.my.id
+      - NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://admin.metroapparel.web.id
+      - NEXT_PUBLIC_BASE_URL=https://metroapparel.web.id
       - NEXT_PUBLIC_DEFAULT_REGION=id
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_network"
       # Router untuk Storefront
-      - "traefik.http.routers.storefront.rule=Host(`metroapparel.nafishandoko.my.id`)"
+      - "traefik.http.routers.storefront.rule=Host(`metroapparel.web.id`)"
       - "traefik.http.routers.storefront.entrypoints=websecure"
       - "traefik.http.routers.storefront.tls.certresolver=letsencrypt"
       - "traefik.http.services.storefront.loadbalancer.server.port=8000"

@@ -30,7 +30,7 @@ module.exports = defineConfig({
             "localhost",
             ".localhost",
             "127.0.0.1",
-            "admin.metroapparel.nafishandoko.my.id",
+            "admin.metroapparel.web.id",
           ],
           hmr: {
             // HMR websocket port inside container

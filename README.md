@@ -193,8 +193,8 @@ openssl rand -hex 32  # Jalankan 2x untuk JWT_SECRET dan COOKIE_SECRET
 
 Edit `docker/production/docker-compose.yml` dan ganti domain sesuai kebutuhan:
 
-- `admin.metroapparel.nafishandoko.my.id` → domain admin kamu
-- `metroapparel.nafishandoko.my.id` → domain storefront kamu
+- `admin.metroapparel.web.id` → domain admin kamu
+- `metroapparel.web.id` → domain storefront kamu
 
 Update juga environment variables `STORE_CORS`, `ADMIN_CORS`, `AUTH_CORS`, `NEXT_PUBLIC_MEDUSA_BACKEND_URL`, dan `NEXT_PUBLIC_BASE_URL`.
 
