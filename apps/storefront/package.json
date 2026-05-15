@@ -9,8 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@medusajs/js-sdk": "2.14.2",
-    "@medusajs/types": "2.14.2",
+    "@medusajs/js-sdk": "2.15.2",
+    "@medusajs/types": "2.15.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
