@@ -1,6 +1,6 @@
 /**
  * Fallback bila API Medusa tidak tersedia. Konten utama beranda & kontak diambil dari
- * Admin → Settings (Informasi perusahaan, Galeri, Klien, Testimoni, FAQ) — metadata
+ * Admin → Settings (Informasi perusahaan, Galeri, Klien, Testimoni, FAQ, FAQ Sponsorship) — metadata
  * `metro_site_*_json` di store; fallback `metro_site_content_json` legacy.
  */
 export const site = {

@@ -326,3 +326,40 @@ export function inferJerseyKindFromProductHandle(
 export function showCollarPickerForProductHandle(handle: string): boolean {
   return handle === "jersey-atasan" || handle === "jersey-satu-set";
 }
+
+/** Pilihan keperluan jersey custom — disimpan di metadata baris keranjang / order. */
+export type JerseyPurposeOption = { id: string; label: string };
+
+export const JERSEY_PURPOSE_OTHER_ID = "lainnya";
+
+export const jerseyPurposeOtherMaxChars = 120;
+
+export const jerseyPurposeOptions: JerseyPurposeOption[] = [
+  { id: "futsal", label: "Futsal" },
+  { id: "sepak-bola", label: "Sepak bola" },
+  { id: "voli", label: "Voli" },
+  { id: "basket", label: "Basket" },
+  { id: "badminton", label: "Bulu tangkis" },
+  { id: "lari", label: "Lari / fun run" },
+  { id: "esports", label: "Esports" },
+  { id: "komunitas", label: "Komunitas / event" },
+  { id: JERSEY_PURPOSE_OTHER_ID, label: "Lainnya" },
+];
+
+export function jerseyPurposeLabelById(id: string): string | undefined {
+  return jerseyPurposeOptions.find((o) => o.id === id)?.label;
+}
+
+/** Label untuk metadata / admin — gabung teks bebas bila opsi Lainnya. */
+export function formatJerseyPurposeLabel(id: string, otherText?: string): string {
+  if (!id) return "";
+  if (id === JERSEY_PURPOSE_OTHER_ID) {
+    const custom = otherText?.trim() ?? "";
+    return custom ? `Lainnya — ${custom}` : "Lainnya";
+  }
+  return jerseyPurposeLabelById(id) ?? "";
+}
+
+export function isCustomJerseyCategorySlug(slug: string | undefined): boolean {
+  return slug === "custom-jersey";
+}

@@ -75,6 +75,10 @@ function MetroLineConfigSummary({
     });
   }
   if (tier) rows.push({ label: "Paket", value: tier });
+  const jerseyPurpose = strMeta(m, "metro_jersey_purpose_label");
+  if (jerseyPurpose) {
+    rows.push({ label: "Olahraga / kegiatan", value: jerseyPurpose });
+  }
   if (showSizeRow && sizeRaw) rows.push({ label: "Ukuran", value: sizeRaw });
   if (collar) rows.push({ label: "Kerah", value: collar });
   if (oversize) rows.push({ label: "Oversize", value: "Ya" });

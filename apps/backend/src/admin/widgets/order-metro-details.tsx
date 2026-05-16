@@ -104,9 +104,9 @@ const OrderMetroDetailsWidget = ({ data }: { data: OrderLike }) => {
           Konfigurasi Metro (dari pelanggan)
         </Heading>
         <Text size="small" className="text-ui-fg-subtle mt-1 max-w-2xl">
-          Ringkasan paket, kerah, ukuran (satuan), tipe pemesanan (satuan / tim), catatan tim, add-on,
-          dan rincian harga per baris pesanan. Data ini berasal dari checkout konfigurator — tidak
-          perlu membuka metadata mentah.
+          Ringkasan paket, olahraga / kegiatan (jersey custom), kerah, ukuran (satuan), tipe
+          pemesanan (satuan / tim), catatan tim, add-on, dan rincian harga per baris pesanan. Data
+          ini berasal dari checkout konfigurator.
         </Text>
       </div>
 
@@ -145,6 +145,7 @@ const OrderMetroDetailsWidget = ({ data }: { data: OrderLike }) => {
                 ? upQtyRaw
                 : 0;
           const addonIds = parseAddonIds(m.addons_json);
+          const jerseyPurpose = strMeta(m, "metro_jersey_purpose_label");
 
           return (
             <div key={item.id ?? productTitle} className="px-6 py-5 space-y-3">
@@ -178,6 +179,12 @@ const OrderMetroDetailsWidget = ({ data }: { data: OrderLike }) => {
                 {tierName ? (
                   <span>
                     <span className="text-ui-fg-muted">Paket:</span> {tierName}
+                  </span>
+                ) : null}
+                {jerseyPurpose ? (
+                  <span>
+                    <span className="text-ui-fg-muted">Olahraga / kegiatan:</span>{" "}
+                    {jerseyPurpose}
                   </span>
                 ) : null}
                 {showSize && sizeRaw ? (

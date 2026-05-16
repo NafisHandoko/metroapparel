@@ -90,6 +90,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
               product={raw}
               addonOptions={addonOptions}
               collarOptions={collarOptions}
+              categorySlug={summary.categorySlug}
             />
             <div className="mt-8">
               <Link

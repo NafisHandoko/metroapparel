@@ -9,6 +9,11 @@ import { Button } from "@/components/ui/button";
 import {
   formatIdr,
   inferTierIdFromPackageLabel,
+  formatJerseyPurposeLabel,
+  isCustomJerseyCategorySlug,
+  JERSEY_PURPOSE_OTHER_ID,
+  jerseyPurposeOptions,
+  jerseyPurposeOtherMaxChars,
   oversizeSurcharge,
   showCollarPickerForProductHandle,
   sizeOptions,
@@ -42,6 +47,8 @@ type MedusaVariantConfiguratorProps = {
   product: HttpTypes.StoreProduct;
   addonOptions: AdditionalOption[];
   collarOptions: CollarOption[];
+  /** Dari kategori Medusa — pilihan keperluan hanya untuk `custom-jersey`. */
+  categorySlug?: string;
 };
 
 function optionsOrdered(
@@ -76,6 +83,7 @@ export function MedusaVariantConfigurator({
   product,
   addonOptions,
   collarOptions,
+  categorySlug,
 }: MedusaVariantConfiguratorProps) {
   const { company } = useSiteContent();
   const router = useRouter();
@@ -103,6 +111,7 @@ export function MedusaVariantConfigurator({
 
   const productHandle = product.handle ?? "";
   const showCollar = showCollarPickerForProductHandle(productHandle);
+  const showJerseyPurpose = isCustomJerseyCategorySlug(categorySlug);
   const jerseyKind: ProductKind | null = useMemo(() => {
     if (productHandle === "jersey-atasan") return "jersey-top";
     if (productHandle === "jersey-satu-set") return "jersey-set";
@@ -114,6 +123,8 @@ export function MedusaVariantConfigurator({
   );
   const [orderMode, setOrderMode] = useState<OrderMode>("team");
   const [teamNotes, setTeamNotes] = useState("");
+  const [jerseyPurposeId, setJerseyPurposeId] = useState("");
+  const [jerseyPurposeOther, setJerseyPurposeOther] = useState("");
   const [size, setSize] = useState<SizeOption>("M");
   const [oversize, setOversize] = useState(false);
   const [addOns, setAddOns] = useState<Record<string, boolean>>({});
@@ -215,6 +226,15 @@ export function MedusaVariantConfigurator({
     } else if (teamNotes.trim()) {
       lines.push(`Daftar / catatan:\n${teamNotes.trim()}`);
     }
+    if (showJerseyPurpose) {
+      const purposeLabel = formatJerseyPurposeLabel(
+        jerseyPurposeId,
+        jerseyPurposeOther,
+      );
+      if (purposeLabel) {
+        lines.push(`Untuk olahraga / kegiatan: *${purposeLabel}*`);
+      }
+    }
     lines.push(`Perkiraan total: *${formatIdr(total)}*`);
     lines.push("Mohon info MOQ dan jadwal. Terima kasih!");
     return lines.join("\n");
@@ -229,6 +249,9 @@ export function MedusaVariantConfigurator({
     collar,
     orderMode,
     teamNotes,
+    showJerseyPurpose,
+    jerseyPurposeId,
+    jerseyPurposeOther,
     size,
     oversize,
     total,
@@ -284,7 +307,33 @@ export function MedusaVariantConfigurator({
       up_size_qty: String(upSizeQty),
       addons_json: JSON.stringify(addonIds),
       estimated_total_idr: String(Math.round(total)),
+      metro_jersey_purpose_id: showJerseyPurpose ? jerseyPurposeId : "",
+      metro_jersey_purpose_label: showJerseyPurpose
+        ? formatJerseyPurposeLabel(jerseyPurposeId, jerseyPurposeOther)
+        : "",
+      metro_jersey_purpose_other:
+        showJerseyPurpose && jerseyPurposeId === JERSEY_PURPOSE_OTHER_ID
+          ? jerseyPurposeOther.trim().slice(0, jerseyPurposeOtherMaxChars)
+          : "",
     };
+  }
+
+  function requireJerseyPurposeSelected(): boolean {
+    if (!showJerseyPurpose) return true;
+    if (!jerseyPurposeId) {
+      setCartError("Pilih olahraga atau kegiatan untuk jersey ini.");
+      return false;
+    }
+    if (
+      jerseyPurposeId === JERSEY_PURPOSE_OTHER_ID &&
+      !jerseyPurposeOther.trim()
+    ) {
+      setCartError(
+        "Untuk opsi Lainnya, isi dulu olahraga atau kegiatan yang dimaksud.",
+      );
+      return false;
+    }
+    return true;
   }
 
   function addToWebsiteCart() {
@@ -295,6 +344,7 @@ export function MedusaVariantConfigurator({
       );
       return;
     }
+    if (!requireJerseyPurposeSelected()) return;
     setCartError(null);
     startTransition(async () => {
       const res = await addMetroConfiguratorToCartAction({
@@ -652,6 +702,67 @@ export function MedusaVariantConfigurator({
             </p>
           </div>
         )}
+
+        {showJerseyPurpose ? (
+          <div className="mt-8">
+            <h2 className="font-display text-xl tracking-wide text-foreground">
+              Untuk olahraga / kegiatan apa?
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              Pilih yang paling sesuai agar tim kami bisa merekomendasikan desain jersey
+              yang pas.
+            </p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {jerseyPurposeOptions.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    setCartError(null);
+                    setJerseyPurposeId(opt.id);
+                    if (opt.id !== JERSEY_PURPOSE_OTHER_ID) {
+                      setJerseyPurposeOther("");
+                    }
+                  }}
+                  className={cn(
+                    "rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
+                    jerseyPurposeId === opt.id
+                      ? "border-brand bg-brand/10 text-foreground"
+                      : "border-white/10 text-muted hover:border-white/25 hover:text-foreground",
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {jerseyPurposeId === JERSEY_PURPOSE_OTHER_ID ? (
+              <div className="mt-4">
+                <label
+                  htmlFor="metro-jersey-purpose-other"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Sebutkan olahraga / kegiatannya
+                </label>
+                <input
+                  id="metro-jersey-purpose-other"
+                  type="text"
+                  value={jerseyPurposeOther}
+                  onChange={(e) => {
+                    setCartError(null);
+                    setJerseyPurposeOther(
+                      e.target.value.slice(0, jerseyPurposeOtherMaxChars),
+                    );
+                  }}
+                  placeholder="Contoh: sepak takraw, panahan, senam, dll."
+                  className="mt-2 w-full rounded-lg border border-white/15 bg-background/80 px-3 py-2.5 text-sm text-foreground outline-none ring-brand/30 placeholder:text-muted focus:border-brand focus:ring-2"
+                />
+                <p className="mt-1 text-xs text-muted tabular-nums">
+                  {jerseyPurposeOther.length}/{jerseyPurposeOtherMaxChars} karakter
+                </p>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <div className="rounded-xl border border-brand/25 bg-brand/5 p-6">
