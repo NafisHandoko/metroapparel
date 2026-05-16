@@ -1,4 +1,4 @@
-import { loadEnv, defineConfig } from '@medusajs/framework/utils'
+import { loadEnv, defineConfig, Modules } from '@medusajs/framework/utils'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
@@ -20,12 +20,11 @@ module.exports = defineConfig({
     redisUrl: process.env.REDIS_URL
   },
   admin: {
+    backendUrl: process.env.MEDUSA_BACKEND_URL,
     vite: (config) => {
       return {
         server: {
           host: "0.0.0.0",
-          // Allow all hosts when running in Docker (development mode)
-          // In production, this should be more restrictive
           allowedHosts: [
             "localhost",
             ".localhost",
@@ -33,14 +32,27 @@ module.exports = defineConfig({
             "admin.metroapparel.web.id",
           ],
           hmr: {
-            // HMR websocket port inside container
             port: 5173,
-            // Port browser connects to (exposed in docker-compose.yml)
             clientPort: 5173,
           },
         },
       }
     },
-    backendUrl: process.env.MEDUSA_BACKEND_URL,
+  },
+  modules: {
+    [Modules.FILE]: {
+      resolve: "@medusajs/file",
+      options: {
+        providers: [
+          {
+            resolve: "@medusajs/file-local-next",
+            id: "local",
+            options: {
+              backend_url: process.env.MEDUSA_BACKEND_URL,
+            },
+          },
+        ],
+      },
+    },
   },
 })
