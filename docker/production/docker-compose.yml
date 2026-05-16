@@ -50,6 +50,8 @@ services:
       - "traefik.http.routers.medusa.entrypoints=websecure"
       - "traefik.http.routers.medusa.tls.certresolver=letsencrypt"
       - "traefik.http.services.medusa.loadbalancer.server.port=9000"
+    volumes:
+      - medusa_uploads:/app/apps/backend/static
     networks:
       - internal
       - traefik_network
@@ -103,6 +105,7 @@ services:
 
 volumes:
   postgres_data:
+  medusa_uploads:
 
 networks:
   internal:
