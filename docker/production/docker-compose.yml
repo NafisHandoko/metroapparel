@@ -90,9 +90,18 @@ services:
       - "traefik.http.routers.storefront.entrypoints=websecure"
       - "traefik.http.routers.storefront.tls.certresolver=letsencrypt"
       - "traefik.http.services.storefront.loadbalancer.server.port=8000"
+      # Healthcheck untuk Traefik - hanya routing ke container yang healthy
+      - "traefik.http.services.storefront.loadbalancer.healthcheck.path=/"
+      - "traefik.http.services.storefront.loadbalancer.healthcheck.interval=10s"
     networks:
       - internal
       - traefik_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   postgres_data:
