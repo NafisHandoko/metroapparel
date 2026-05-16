@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { useSiteContent } from "@/components/site-content-provider";
+import { sponsorshipPath } from "@/lib/data/sponsorship";
 
 export function SiteFooter() {
   const { company } = useSiteContent();
@@ -11,10 +12,25 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-white/10 bg-surface/50">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid gap-10 md:grid-cols-3">
+        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-4">
           <div>
             <p className="font-display text-lg text-foreground">{company.name}</p>
             <p className="mt-2 max-w-xs text-sm text-muted">{company.tagline}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand">
+              Program
+            </p>
+            <ul className="mt-3 space-y-2 text-sm">
+              <li>
+                <Link
+                  href={sponsorshipPath}
+                  className="text-muted transition-colors hover:text-foreground"
+                >
+                  Program Sponsorship
+                </Link>
+              </li>
+            </ul>
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-brand">
