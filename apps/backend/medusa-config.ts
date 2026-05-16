@@ -20,7 +20,6 @@ module.exports = defineConfig({
     redisUrl: process.env.REDIS_URL
   },
   admin: {
-    backendUrl: process.env.MEDUSA_BACKEND_URL!,
     vite: (config) => {
       return {
         server: {
@@ -42,5 +41,6 @@ module.exports = defineConfig({
         },
       }
     },
+    backendUrl: process.env.MEDUSA_BACKEND_URL,
   },
 })
