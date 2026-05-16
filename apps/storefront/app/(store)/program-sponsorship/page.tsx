@@ -9,7 +9,6 @@ import {
   getSponsorshipWhatsAppMessage,
   sponsorshipAudiences,
   sponsorshipChecklist,
-  sponsorshipFaq,
   sponsorshipSteps,
 } from "@/lib/data/sponsorship";
 import { getResolvedSiteContent } from "@/lib/medusa/site-content";
@@ -26,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ProgramSponsorshipPage() {
-  const { company } = await getResolvedSiteContent();
+  const { company, sponsorshipFaq } = await getResolvedSiteContent();
   const waHref = getWhatsAppLink(
     getSponsorshipWhatsAppMessage(company.name),
     company.whatsappDigits,

@@ -50,5 +50,11 @@ export default defineMiddlewares({
         authenticate("user", ["session", "bearer", "api-key"]),
       ],
     },
+    {
+      matcher: "/admin/metro-site-sponsorship-faq",
+      middlewares: [
+        authenticate("user", ["session", "bearer", "api-key"]),
+      ],
+    },
   ],
 });

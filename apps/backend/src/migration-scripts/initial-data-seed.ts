@@ -33,7 +33,11 @@ import {
   serializeMetroCollarRulesPayload,
 } from "../metro/metro-collar-rules";
 import {
+  METRO_SITE_SPONSORSHIP_FAQ_METADATA_KEY,
+  defaultMetroSiteContent,
   hasAnySiteContentMetadata,
+  parseSponsorshipFaqFromStoreMetadata,
+  serializeMetroSiteSponsorshipFaq,
   splitSiteContentDefaultsForSeed,
 } from "../metro/metro-site-content";
 
@@ -569,6 +573,27 @@ export default async function initial_data_seed({
         "Metadata konten toko (metro_site_*_json per bagian) diset ke default seed.",
       );
     }
+  }
+
+  const needsSponsorshipFaq =
+    metroStoreRow?.id &&
+    parseSponsorshipFaqFromStoreMetadata(
+      metroStoreRow.metadata?.[METRO_SITE_SPONSORSHIP_FAQ_METADATA_KEY],
+    ) == null;
+  if (needsSponsorshipFaq) {
+    const base = { ...(metroStoreRow!.metadata ?? {}) };
+    base[METRO_SITE_SPONSORSHIP_FAQ_METADATA_KEY] = serializeMetroSiteSponsorshipFaq(
+      defaultMetroSiteContent().sponsorshipFaq,
+    );
+    await updateStoresWorkflow(container).run({
+      input: {
+        selector: { id: metroStoreRow!.id },
+        update: { metadata: base },
+      },
+    });
+    logger.info(
+      "Metadata FAQ sponsorship (metro_site_sponsorship_faq_json) diset ke default seed.",
+    );
   }
 
   logger.info("Seeding region (Indonesia / IDR)...");

@@ -12,6 +12,8 @@ export const METRO_SITE_GALLERY_METADATA_KEY = "metro_site_gallery_json";
 export const METRO_SITE_CLIENTS_METADATA_KEY = "metro_site_clients_json";
 export const METRO_SITE_TESTIMONIALS_METADATA_KEY = "metro_site_testimonials_json";
 export const METRO_SITE_FAQ_METADATA_KEY = "metro_site_faq_json";
+export const METRO_SITE_SPONSORSHIP_FAQ_METADATA_KEY =
+  "metro_site_sponsorship_faq_json";
 export const METRO_SITE_HERO_METADATA_KEY = "metro_site_hero_json";
 
 export const metroSiteCompanySchema = z.object({
@@ -93,6 +95,8 @@ export type MetroSiteContentBaseV1 = z.infer<typeof metroSiteContentV1Schema>;
 /** Konten storefront lengkap termasuk URL latar hero (metadata `metro_site_hero_json`). */
 export type MetroSiteContentV1 = MetroSiteContentBaseV1 & {
   heroBackgroundUrls: string[];
+  /** FAQ halaman program sponsorship (`metro_site_sponsorship_faq_json`). */
+  sponsorshipFaq: z.infer<typeof faqSchema>[];
 };
 export type MetroSiteCompanyV1 = z.infer<typeof metroSiteCompanySchema>;
 
@@ -116,6 +120,10 @@ export const metroSiteFaqPostSchema = z.object({
   faq: z.array(faqSchema).min(1).max(50),
 });
 
+export const metroSiteSponsorshipFaqPostSchema = z.object({
+  faq: z.array(faqSchema).min(1).max(50),
+});
+
 function parseJsonValue(raw: unknown): unknown | null {
   if (raw == null || raw === "") return null;
   if (typeof raw === "object" && !Array.isArray(raw)) return raw;
@@ -134,7 +142,13 @@ export function parseMetroSiteContentFromMetadata(
   try {
     const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
     const r = metroSiteContentV1Schema.safeParse(parsed);
-    return r.success ? { ...r.data, heroBackgroundUrls: [] } : null;
+    return r.success
+      ? {
+          ...r.data,
+          heroBackgroundUrls: [],
+          sponsorshipFaq: defaultSponsorshipFaq(),
+        }
+      : null;
   } catch {
     return null;
   }
@@ -196,6 +210,29 @@ export function parseFaqFromStoreMetadata(
   if (parsed == null) return null;
   const r = z.array(faqSchema).min(1).max(50).safeParse(parsed);
   return r.success ? r.data : null;
+}
+
+export const parseSponsorshipFaqFromStoreMetadata = parseFaqFromStoreMetadata;
+
+function defaultSponsorshipFaq(): MetroSiteContentV1["sponsorshipFaq"] {
+  return [
+    {
+      q: "Apa bedanya dengan logo sponsor di jersey custom?",
+      a: "Program ini untuk kerjasama sponsorship event (dukungan event & brand recognition). Logo sponsor di jersey adalah add-on terpisah saat order produk custom di toko.",
+    },
+    {
+      q: "Apakah semua pengajuan pasti disetujui?",
+      a: "Setiap ajuan kami review berdasarkan kesesuaian brand, jadwal, dan kapasitas tim. Tidak semua event bisa kami dukung, tetapi kami akan membalas dengan jelas.",
+    },
+    {
+      q: "Bentuk dukungan apa saja yang bisa diberikan?",
+      a: "Bisa berupa dukungan dana, produk apparel, atau penempatan brand Metro di materi event — detailnya disepakati lewat diskusi dengan panitia.",
+    },
+    {
+      q: "Berapa lama proses review?",
+      a: "Tergantung kelengkapan informasi. Umumnya kami membalas dalam beberapa hari kerja setelah pengajuan lengkap masuk via WhatsApp.",
+    },
+  ];
 }
 
 /** Nilai awal — selaras dengan `apps/storefront/lib/data/site.ts` sebelum override admin. */
@@ -274,6 +311,7 @@ export function defaultMetroSiteContent(): MetroSiteContentV1 {
         a: "Kota Jombang dan sekitarnya. Tersedia juga opsi pickup di workshop kami di Jombang.",
       },
     ],
+    sponsorshipFaq: defaultSponsorshipFaq(),
     heroBackgroundUrls: [],
   };
 }
@@ -327,7 +365,21 @@ export function resolveMetroSiteContent(
     parseHeroUrlsFromStoreMetadata(m[METRO_SITE_HERO_METADATA_KEY]) ??
     def.heroBackgroundUrls;
 
-  return { v: 1, company, gallery, clients, testimonials, faq, heroBackgroundUrls };
+  const sponsorshipFaq =
+    parseSponsorshipFaqFromStoreMetadata(
+      m[METRO_SITE_SPONSORSHIP_FAQ_METADATA_KEY],
+    ) ?? def.sponsorshipFaq;
+
+  return {
+    v: 1,
+    company,
+    gallery,
+    clients,
+    testimonials,
+    faq,
+    heroBackgroundUrls,
+    sponsorshipFaq,
+  };
 }
 
 /** @deprecated Prefer `resolveMetroSiteContent` dengan metadata penuh. */
@@ -370,6 +422,12 @@ export function serializeMetroSiteFaq(faq: MetroSiteContentV1["faq"]): string {
   return JSON.stringify(faq);
 }
 
+export function serializeMetroSiteSponsorshipFaq(
+  faq: MetroSiteContentV1["sponsorshipFaq"],
+): string {
+  return JSON.stringify(faq);
+}
+
 export function hasAnySiteContentMetadata(
   metadata: Record<string, unknown> | null | undefined,
 ): boolean {
@@ -380,6 +438,7 @@ export function hasAnySiteContentMetadata(
   if (m[METRO_SITE_CLIENTS_METADATA_KEY] != null) return true;
   if (m[METRO_SITE_TESTIMONIALS_METADATA_KEY] != null) return true;
   if (m[METRO_SITE_FAQ_METADATA_KEY] != null) return true;
+  if (m[METRO_SITE_SPONSORSHIP_FAQ_METADATA_KEY] != null) return true;
   if (m[METRO_SITE_HERO_METADATA_KEY] != null) return true;
   return false;
 }
@@ -443,6 +502,17 @@ export function isMetroSiteFaqSectionDefault(
   );
 }
 
+export function isMetroSiteSponsorshipFaqSectionDefault(
+  metadata: Record<string, unknown> | null | undefined,
+): boolean {
+  const m = normalizedMetadata(metadata);
+  return (
+    parseSponsorshipFaqFromStoreMetadata(
+      m[METRO_SITE_SPONSORSHIP_FAQ_METADATA_KEY],
+    ) == null
+  );
+}
+
 export function isMetroSiteHeroSectionDefault(
   metadata: Record<string, unknown> | null | undefined,
 ): boolean {
@@ -464,5 +534,8 @@ export function splitSiteContentDefaultsForSeed(): Record<string, string> {
       d.testimonials,
     ),
     [METRO_SITE_FAQ_METADATA_KEY]: serializeMetroSiteFaq(d.faq),
+    [METRO_SITE_SPONSORSHIP_FAQ_METADATA_KEY]: serializeMetroSiteSponsorshipFaq(
+      d.sponsorshipFaq,
+    ),
   };
 }

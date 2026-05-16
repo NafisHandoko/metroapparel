@@ -7,6 +7,7 @@ import {
   site,
   testimonials,
 } from "@/lib/data/site";
+import { sponsorshipFaq as fallbackSponsorshipFaq } from "@/lib/data/sponsorship";
 import type { MetroSiteContentV1 } from "@/lib/medusa/site-content-types";
 
 import { sdk } from "./config";
@@ -35,6 +36,7 @@ function fallbackSiteContent(): MetroSiteContentV1 {
     clients: clientLogos.map((c) => ({ name: c.name, abbr: c.abbr })),
     testimonials: testimonials.map((t) => ({ ...t })),
     faq: faqItems.map((f) => ({ ...f })),
+    sponsorshipFaq: fallbackSponsorshipFaq.map((f) => ({ ...f })),
   };
 }
 
@@ -52,7 +54,16 @@ export const getResolvedSiteContent = cache(
         "/store/metro-site-content",
         { method: "GET", cache: "no-store" },
       );
-      if (res?.content?.v === 1) return res.content;
+      if (res?.content?.v === 1) {
+        const fallback = fallbackSiteContent();
+        return {
+          ...res.content,
+          sponsorshipFaq:
+            res.content.sponsorshipFaq?.length
+              ? res.content.sponsorshipFaq
+              : fallback.sponsorshipFaq,
+        };
+      }
     } catch {
       /* gunakan fallback */
     }

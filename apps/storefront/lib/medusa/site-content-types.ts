@@ -35,4 +35,5 @@ export type MetroSiteContentV1 = {
   clients: MetroSiteClientV1[];
   testimonials: MetroSiteTestimonialV1[];
   faq: MetroSiteFaqV1[];
+  sponsorshipFaq: MetroSiteFaqV1[];
 };
