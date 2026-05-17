@@ -4,9 +4,12 @@ import { motion, useReducedMotion } from "framer-motion";
 
 import { Reveal, RevealItem, RevealStagger } from "@/components/motion/reveal";
 import { whyUs } from "@/lib/data/site";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 
 export function WhyUsSection() {
-  const reduce = useReducedMotion();
+  const prefersReducedMotion = useReducedMotion();
+  const isMobile = useIsMobile();
+  const reduce = prefersReducedMotion || isMobile;
 
   return (
     <section id="why" className="scroll-mt-24 border-t border-white/10 py-20 sm:py-24">

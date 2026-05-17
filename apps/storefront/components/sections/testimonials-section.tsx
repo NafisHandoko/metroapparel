@@ -4,10 +4,13 @@ import { motion, useReducedMotion } from "framer-motion";
 
 import { Reveal, RevealItem, RevealStagger } from "@/components/motion/reveal";
 import { useSiteContent } from "@/components/site-content-provider";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 
 export function TestimonialsSection() {
   const { testimonials } = useSiteContent();
-  const reduce = useReducedMotion();
+  const prefersReducedMotion = useReducedMotion();
+  const isMobile = useIsMobile();
+  const reduce = prefersReducedMotion || isMobile;
 
   return (
     <section className="border-t border-white/10 py-20 sm:py-24">

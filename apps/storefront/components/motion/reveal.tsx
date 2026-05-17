@@ -9,6 +9,7 @@ import {
 } from "framer-motion";
 
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 
 const easeOut = [0.22, 1, 0.36, 1] as const;
 
@@ -37,7 +38,9 @@ export function Reveal({
   children,
   ...props
 }: RevealProps) {
-  const reduce = useReducedMotion();
+  const prefersReducedMotion = useReducedMotion();
+  const isMobile = useIsMobile();
+  const reduce = prefersReducedMotion || isMobile;
 
   if (reduce) {
     return <div className={cn(className)}>{children}</div>;
@@ -74,7 +77,9 @@ export function RevealStagger({
   children,
   ...props
 }: RevealStaggerProps) {
-  const reduce = useReducedMotion();
+  const prefersReducedMotion = useReducedMotion();
+  const isMobile = useIsMobile();
+  const reduce = prefersReducedMotion || isMobile;
 
   if (reduce) {
     return <div className={cn(className)}>{children}</div>;
@@ -107,7 +112,9 @@ type RevealItemProps = Omit<HTMLMotionProps<"div">, "children"> & {
 };
 
 export function RevealItem({ className, children, ...props }: RevealItemProps) {
-  const reduce = useReducedMotion();
+  const prefersReducedMotion = useReducedMotion();
+  const isMobile = useIsMobile();
+  const reduce = prefersReducedMotion || isMobile;
 
   if (reduce) {
     return <div className={cn(className)}>{children}</div>;

@@ -8,13 +8,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatIdr } from "@/lib/data/catalog";
 import type { Product } from "@/lib/data/site";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 
 type ProductCardProps = {
   product: Product;
 };
 
 export function ProductCard({ product }: ProductCardProps) {
-  const reduce = useReducedMotion();
+  const prefersReducedMotion = useReducedMotion();
+  const isMobile = useIsMobile();
+  const reduce = prefersReducedMotion || isMobile;
   const from =
     product.minPriceIdr !== null ? formatIdr(product.minPriceIdr) : "—";
 

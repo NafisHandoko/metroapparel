@@ -7,8 +7,9 @@ import { InfiniteMarquee } from "@/components/motion/infinite-marquee";
 import { Reveal } from "@/components/motion/reveal";
 import { useSiteContent } from "@/components/site-content-provider";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 
-function GallerySlide({ src, index }: { src: string; index: number }) {
+function GallerySlide({ src, index, isMobile }: { src: string; index: number; isMobile: boolean }) {
   return (
     <div
       className={cn(
@@ -20,7 +21,10 @@ function GallerySlide({ src, index }: { src: string; index: number }) {
         src={src}
         alt={`Galeri jersey ${index + 1}`}
         fill
-        className="object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-[1.06]"
+        className={cn(
+          "object-cover",
+          !isMobile && "transition-transform duration-700 ease-out will-change-transform group-hover:scale-[1.06]"
+        )}
         sizes="(max-width: 640px) 72vw, 320px"
       />
     </div>
@@ -30,14 +34,16 @@ function GallerySlide({ src, index }: { src: string; index: number }) {
 function GallerySegment({
   keySuffix,
   images,
+  isMobile,
 }: {
   keySuffix: string;
   images: string[];
+  isMobile: boolean;
 }) {
   return (
     <>
       {images.map((src, i) => (
-        <GallerySlide key={`${src}-${keySuffix}-${i}`} src={src} index={i} />
+        <GallerySlide key={`${src}-${keySuffix}-${i}`} src={src} index={i} isMobile={isMobile} />
       ))}
     </>
   );
@@ -45,7 +51,9 @@ function GallerySegment({
 
 export function GallerySection() {
   const { gallery: galleryImages } = useSiteContent();
-  const reduce = useReducedMotion();
+  const prefersReducedMotion = useReducedMotion();
+  const isMobile = useIsMobile();
+  const reduce = prefersReducedMotion || isMobile;
 
   return (
     <section className="border-t border-white/10 py-20 sm:py-24">
@@ -74,7 +82,7 @@ export function GallerySection() {
           ariaLabel="Galeri foto lapangan, dapat diseret horizontal"
           viewportClassName={reduce ? "mt-10" : "mt-6 min-h-[min(72vw,360px)] sm:min-h-[22rem]"}
           renderSegment={(_, keySuffix) => (
-            <GallerySegment keySuffix={keySuffix} images={galleryImages} />
+            <GallerySegment keySuffix={keySuffix} images={galleryImages} isMobile={isMobile} />
           )}
         />
       </div>

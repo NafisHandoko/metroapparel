@@ -16,6 +16,7 @@ import { ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSiteContent } from "@/components/site-content-provider";
 import { getWhatsAppLink } from "@/lib/whatsapp";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 
 /** Durasi zoom-in halus per slide (ms). */
 const HERO_ZOOM_MS = 8200;
@@ -45,7 +46,9 @@ const textItem = {
 
 export function HeroSection() {
   const { company, heroBackgroundUrls } = useSiteContent();
-  const reduce = useReducedMotion();
+  const prefersReducedMotion = useReducedMotion();
+  const isMobile = useIsMobile();
+  const reduce = prefersReducedMotion || isMobile;
   /** Lapisan bawah = slide saat ini; lapisan atas memudar menampilkan slide berikutnya (dua lapisan — loop tanpa jeda hitam). */
   const [bottomIndex, setBottomIndex] = React.useState(0);
   const [overlayVisible, setOverlayVisible] = React.useState(false);
@@ -207,26 +210,30 @@ export function HeroSection() {
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         />
       ) : null}
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute -left-1/4 top-1/3 h-[min(80vw,520px)] w-[min(80vw,520px)] rounded-full bg-brand/15 blur-[100px]"
-        animate={
-          reduce
-            ? undefined
-            : { y: [0, -14, 0], scale: [1, 1.04, 1], opacity: [0.35, 0.55, 0.35] }
-        }
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute -right-1/4 bottom-0 h-[min(70vw,420px)] w-[min(70vw,420px)] rounded-full bg-brand/10 blur-[90px]"
-        animate={
-          reduce
-            ? undefined
-            : { y: [0, 12, 0], scale: [1, 1.06, 1], opacity: [0.25, 0.45, 0.25] }
-        }
-        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
-      />
+      {!isMobile && (
+        <>
+          <motion.div
+            aria-hidden
+            className="pointer-events-none absolute -left-1/4 top-1/3 h-[min(80vw,520px)] w-[min(80vw,520px)] rounded-full bg-brand/15 blur-[100px]"
+            animate={
+              reduce
+                ? undefined
+                : { y: [0, -14, 0], scale: [1, 1.04, 1], opacity: [0.35, 0.55, 0.35] }
+            }
+            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div
+            aria-hidden
+            className="pointer-events-none absolute -right-1/4 bottom-0 h-[min(70vw,420px)] w-[min(70vw,420px)] rounded-full bg-brand/10 blur-[90px]"
+            animate={
+              reduce
+                ? undefined
+                : { y: [0, 12, 0], scale: [1, 1.06, 1], opacity: [0.25, 0.45, 0.25] }
+            }
+            transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </>
+      )}
 
       <div className="relative mx-auto flex min-h-[85vh] max-w-7xl flex-col justify-end gap-8 px-4 pb-20 pt-32 sm:px-6 sm:pb-24 lg:px-8 lg:pb-28 lg:pt-40">
         <motion.div
