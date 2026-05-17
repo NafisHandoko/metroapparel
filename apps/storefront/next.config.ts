@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
     dangerouslyAllowLocalIP:
       process.env.NODE_ENV === "development" ||
       process.env.IMAGES_ALLOW_LOCAL_IP === "true",
-    unoptimized: true,
+    unoptimized: false,
     remotePatterns: [
       {
         protocol: "https",

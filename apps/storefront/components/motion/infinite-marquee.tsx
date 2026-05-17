@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 
 export const MARQUEE_MAX_SEGMENTS = 18;
 
@@ -29,6 +30,7 @@ export function InfiniteMarquee({
   viewportClassName,
   trackClassName,
 }: InfiniteMarqueeProps) {
+  const isMobile = useIsMobile();
   const viewportRef = React.useRef<HTMLDivElement>(null);
   const trackRef = React.useRef<HTMLDivElement>(null);
   const copyARef = React.useRef<HTMLDivElement>(null);
@@ -82,7 +84,7 @@ export function InfiniteMarquee({
   }, []);
 
   React.useEffect(() => {
-    if (reducedMotion || loopPx <= 0 || durationSec <= 0) return;
+    if (reducedMotion || loopPx <= 0 || durationSec <= 0 || isMobile) return;
 
     let stopped = false;
     const velocityPxPerSec = -loopPx / durationSec;
@@ -108,16 +110,16 @@ export function InfiniteMarquee({
       stopped = true;
       cancelAnimationFrame(rafRef.current);
     };
-  }, [applyTransform, durationSec, loopPx, reducedMotion]);
+  }, [applyTransform, durationSec, loopPx, reducedMotion, isMobile]);
 
   const onPointerDown = React.useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (e.button !== 0 || loopPx <= 0) return;
+      if (e.button !== 0 || loopPx <= 0 || isMobile) return;
       e.currentTarget.setPointerCapture(e.pointerId);
       draggingRef.current = true;
       lastClientXRef.current = e.clientX;
     },
-    [loopPx],
+    [loopPx, isMobile],
   );
 
   const onPointerMove = React.useCallback(
@@ -164,22 +166,26 @@ export function InfiniteMarquee({
       className={cn(
         "relative overflow-hidden select-none touch-none",
         "mask-[linear-gradient(90deg,transparent,black_8%,black_92%,transparent)]",
-        loopPx > 0 && "cursor-grab active:cursor-grabbing",
+        loopPx > 0 && !isMobile && "cursor-grab active:cursor-grabbing",
         viewportClassName,
       )}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
+      onPointerDown={isMobile ? undefined : onPointerDown}
+      onPointerMove={isMobile ? undefined : onPointerMove}
+      onPointerUp={isMobile ? undefined : onPointerUp}
+      onPointerCancel={isMobile ? undefined : onPointerUp}
       role="region"
       aria-label={ariaLabel}
     >
       <div
         ref={trackRef}
         className={cn(
-          "flex w-max gap-4 will-change-transform sm:gap-6",
+          "flex w-max gap-4 sm:gap-6",
+          isMobile
+            ? "animate-[marquee-seamless_30s_linear_infinite]"
+            : "will-change-transform",
           trackClassName,
         )}
+        style={isMobile && loopPx > 0 ? { ["--marquee-x" as string]: `-${loopPx}px` } : undefined}
       >
         {Array.from({ length: segmentCount }, (_, i) => (
           <div
