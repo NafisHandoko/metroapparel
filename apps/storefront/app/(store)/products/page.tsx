@@ -1,4 +1,5 @@
 import { ProductCategoryFilter } from "@/components/product/product-category-filter";
+import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
 import { categorySlugToName } from "@/lib/data/site";
 import { listMetroProducts } from "@/lib/medusa/products";
 import { getResolvedSiteContent } from "@/lib/medusa/site-content";
@@ -6,11 +7,29 @@ import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://metroapparel.web.id";
+
 export async function generateMetadata(): Promise<Metadata> {
   const content = await getResolvedSiteContent();
+  const description = `Katalog lengkap produk ${content.company.name}: Custom Jersey tim & komunitas, training pants, jaket, polo, dan apparel berkualitas. Produksi lokal di Jombang dengan bahan premium.`;
+
   return {
     title: `Produk — ${content.company.name}`,
-    description: `Katalog lengkap ${content.company.name}: Custom Jersey dan Toko Metro (training pants, jaket, polo, dll.).`,
+    description,
+    alternates: {
+      canonical: `${siteUrl}/products`,
+    },
+    openGraph: {
+      title: `Produk — ${content.company.name}`,
+      description,
+      url: `${siteUrl}/products`,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `Produk — ${content.company.name}`,
+      description,
+    },
   };
 }
 
@@ -28,7 +47,14 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   const products = await listMetroProducts();
 
   return (
-    <div className="border-b border-white/10 pb-20 pt-12 sm:pt-16">
+    <>
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Beranda", url: siteUrl },
+          { name: "Produk", url: `${siteUrl}/products` },
+        ]}
+      />
+      <div className="border-b border-white/10 pb-20 pt-12 sm:pt-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">
           Katalog
@@ -58,6 +84,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

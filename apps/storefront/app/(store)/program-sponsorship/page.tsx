@@ -5,6 +5,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import { BreadcrumbJsonLd, FAQJsonLd } from "@/components/seo/json-ld";
 import {
   getSponsorshipWhatsAppMessage,
   sponsorshipAudiences,
@@ -15,12 +16,29 @@ import { getResolvedSiteContent } from "@/lib/medusa/site-content";
 import { getWhatsAppLink } from "@/lib/whatsapp";
 import type { Metadata } from "next";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://metroapparel.web.id";
+
 export async function generateMetadata(): Promise<Metadata> {
   const content = await getResolvedSiteContent();
+  const description = `Program sponsorship ${content.company.name} untuk sekolah, kampus, dan komunitas. Ajukan kerjasama event dan dapatkan dukungan jersey & apparel dengan timbal balik brand recognition.`;
+
   return {
     title: `Program Sponsorship — ${content.company.name}`,
-    description:
-      "Ajukan kerjasama sponsorship event untuk sekolah, kampus, dan komunitas. Metro Apparel mendukung event kamu dengan timbal balik brand recognition.",
+    description,
+    alternates: {
+      canonical: `${siteUrl}/program-sponsorship`,
+    },
+    openGraph: {
+      title: `Program Sponsorship — ${content.company.name}`,
+      description,
+      url: `${siteUrl}/program-sponsorship`,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `Program Sponsorship — ${content.company.name}`,
+      description,
+    },
   };
 }
 
@@ -32,7 +50,15 @@ export default async function ProgramSponsorshipPage() {
   );
 
   return (
-    <div className="border-b border-white/10 pb-24">
+    <>
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Beranda", url: siteUrl },
+          { name: "Program Sponsorship", url: `${siteUrl}/program-sponsorship` },
+        ]}
+      />
+      <FAQJsonLd faqs={sponsorshipFaq} />
+      <div className="border-b border-white/10 pb-24">
       <section className="pt-12 sm:pt-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">
@@ -148,6 +174,7 @@ export default async function ProgramSponsorshipPage() {
           </div>
         </div>
       </section>
-    </div>
+      </div>
+    </>
   );
 }

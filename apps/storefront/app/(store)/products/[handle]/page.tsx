@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { MedusaVariantConfigurator } from "@/components/product/medusa-variant-configurator";
+import { BreadcrumbJsonLd, ProductJsonLd } from "@/components/seo/json-ld";
 import { Badge } from "@/components/ui/badge";
 import { formatIdr } from "@/lib/data/catalog";
 import { catalogListPathForCategory } from "@/lib/data/site";
@@ -18,6 +19,8 @@ import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://metroapparel.web.id";
+
 type PageProps = { params: Promise<{ handle: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -27,15 +30,46 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     getResolvedSiteContent(),
   ]);
   if (!raw) return { title: "Produk" };
+
+  const productUrl = `${siteUrl}/products/${handle}`;
+  const productImage = raw.thumbnail ?? raw.images?.[0]?.url ?? `${siteUrl}/og-image.jpg`;
+  const description = raw.description ?? `${raw.title} - Custom jersey & apparel dari ${content.company.name}`;
+
   return {
     title: `${raw.title} — ${content.company.name}`,
-    description: raw.description ?? raw.title,
+    description,
+    alternates: {
+      canonical: productUrl,
+    },
+    openGraph: {
+      title: `${raw.title} — ${content.company.name}`,
+      description,
+      url: productUrl,
+      type: "website",
+      images: [
+        {
+          url: productImage,
+          width: 800,
+          height: 800,
+          alt: raw.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${raw.title} — ${content.company.name}`,
+      description,
+      images: [productImage],
+    },
   };
 }
 
 export default async function ProductDetailPage({ params }: PageProps) {
   const { handle } = await params;
-  const raw = await getMetroProductByHandle(handle);
+  const [raw, content] = await Promise.all([
+    getMetroProductByHandle(handle),
+    getResolvedSiteContent(),
+  ]);
   if (!raw?.id || !raw.handle) notFound();
   const summary = mapStoreProductToProduct(raw);
   if (!summary) notFound();
@@ -53,15 +87,32 @@ export default async function ProductDetailPage({ params }: PageProps) {
         ? formatIdr(min)
         : "Lihat varian";
 
+  const productUrl = `${siteUrl}/products/${handle}`;
+  const categoryName = summary.category;
+  const categoryPath = catalogListPathForCategory(summary.categorySlug);
+
   return (
-    <div className="border-b border-white/10 pb-20 pt-10 sm:pt-14">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <Link
-          href={catalogListPathForCategory(summary.categorySlug)}
-          className="text-sm font-medium text-muted transition-colors hover:text-brand"
-        >
-          ← Kembali ke katalog
-        </Link>
+    <>
+      <ProductJsonLd
+        product={summary}
+        companyName={content.company.name}
+        fullUrl={productUrl}
+      />
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Beranda", url: siteUrl },
+          { name: categoryName, url: `${siteUrl}${categoryPath}` },
+          { name: summary.name, url: productUrl },
+        ]}
+      />
+      <div className="border-b border-white/10 pb-20 pt-10 sm:pt-14">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <Link
+            href={categoryPath}
+            className="text-sm font-medium text-muted transition-colors hover:text-brand"
+          >
+            ← Kembali ke katalog
+          </Link>
         <div className="mt-8 grid gap-10 lg:grid-cols-2 lg:gap-14">
           <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/10 bg-surface lg:aspect-[3/4]">
             <Image
@@ -102,7 +153,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </div>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
