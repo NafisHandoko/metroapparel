@@ -584,6 +584,11 @@ export function MedusaVariantConfigurator({
                   </button>
                 ))}
               </div>
+              {selectedFabricOption?.description ? (
+                <p className="mt-3 text-xs text-muted">
+                  {selectedFabricOption.description}
+                </p>
+              ) : null}
             </div>
           ) : null}
         </div>

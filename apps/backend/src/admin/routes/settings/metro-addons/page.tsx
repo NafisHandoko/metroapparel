@@ -30,7 +30,6 @@ type EntryForm = {
   description: string;
   price: string;
   inputQuantity: boolean;
-  groupFabric: boolean;
   scope: ScopeMode;
   linked_products: LinkedProduct[];
 };
@@ -52,7 +51,6 @@ const emptyEntry = (): EntryForm => ({
   description: "",
   price: "0",
   inputQuantity: false,
-  groupFabric: false,
   scope: "all",
   linked_products: [],
 });
@@ -64,7 +62,6 @@ function apiEntryToForm(e: ApiEntry): EntryForm {
     description: e.description ?? "",
     price: String(e.price),
     inputQuantity: e.input === "quantity",
-    groupFabric: e.group === "fabric-extra",
     scope: e.scope,
     linked_products: (e.product_ids ?? []).map((id) => ({
       id,
@@ -82,7 +79,7 @@ function formToPayload(entries: EntryForm[]) {
       description: row.description.trim() || undefined,
       price: Number.isFinite(price) ? price : 0,
       input: row.inputQuantity ? ("quantity" as const) : undefined,
-      group: row.groupFabric ? ("fabric-extra" as const) : undefined,
+      group: undefined,
       scope: row.scope,
       product_ids: row.linked_products.map((p) => p.id),
     };
@@ -93,6 +90,7 @@ const MetroAddonsSettingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [entries, setEntries] = useState<EntryForm[]>([]);
+  const [fabricEntries, setFabricEntries] = useState<ApiEntry[]>([]);
   const [searchRow, setSearchRow] = useState<number | null>(null);
   const [searchQ, setSearchQ] = useState("");
   const [searchHits, setSearchHits] = useState<{ id: string; title: string }[]>(
@@ -108,15 +106,18 @@ const MetroAddonsSettingsPage = () => {
       });
       if (!res.ok) throw new Error(await res.text());
       const data = (await res.json()) as { entries: ApiEntry[] };
+      const all = data.entries ?? [];
+      const nonFabric = all.filter((e) => e.group !== "fabric-extra");
+      const fabric = all.filter((e) => e.group === "fabric-extra");
       setEntries(
-        data.entries?.length
-          ? data.entries.map(apiEntryToForm)
-          : [emptyEntry()],
+        nonFabric.length ? nonFabric.map(apiEntryToForm) : [emptyEntry()],
       );
+      setFabricEntries(fabric);
     } catch (e) {
       console.error(e);
       toast.error("Gagal memuat pengaturan add-on.");
       setEntries([emptyEntry()]);
+      setFabricEntries([]);
     } finally {
       setLoading(false);
     }
@@ -193,11 +194,13 @@ const MetroAddonsSettingsPage = () => {
     }
     setSaving(true);
     try {
+      const addonPayload = formToPayload(entries);
+      const combined = [...addonPayload, ...fabricEntries];
       const res = await fetch("/admin/metro-addon-catalog", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entries: formToPayload(entries) }),
+        body: JSON.stringify({ entries: combined }),
       });
       if (!res.ok) throw new Error(await res.text());
       toast.success("Add-on disimpan. Toko akan memakai daftar ini.");
@@ -255,11 +258,10 @@ const MetroAddonsSettingsPage = () => {
       <div className="flex flex-col gap-2 px-6 py-4">
         <Heading level="h1">Add-on & biaya tambahan (Metro)</Heading>
         <Text size="small" className="text-ui-fg-subtle max-w-3xl">
-          Atur harga opsi tambahan untuk konfigurator dan checkout. Secara
-          default setiap add-on berlaku untuk semua produk. Gunakan &quot;Hanya
-          produk terpilih&quot; atau &quot;Kecuali produk terpilih&quot; untuk
-          membatasi per add-on. Penyimpanan memakai data toko di belakang layar
-          — tidak perlu mengedit JSON.
+          Atur harga opsi tambahan untuk konfigurator dan checkout (misal: 3D
+          logo, lengan panjang, rib, dll). Untuk pengaturan pilihan kain
+          (emboss, jacquard, dll), gunakan menu{" "}
+          <strong>Pilihan Kain</strong> di sidebar.
         </Text>
       </div>
 
@@ -368,16 +370,6 @@ const MetroAddonsSettingsPage = () => {
                       }
                     />
                     Tipe kuantitas (contoh: up size per kelipatan)
-                  </label>
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={row.groupFabric}
-                      onChange={(e) =>
-                        patchRow(i, { groupFabric: e.target.checked })
-                      }
-                    />
-                    Pilihan kain
                   </label>
                 </div>
 
