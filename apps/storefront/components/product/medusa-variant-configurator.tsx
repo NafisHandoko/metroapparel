@@ -129,9 +129,7 @@ export function MedusaVariantConfigurator({
   const [oversize, setOversize] = useState(false);
   const [addOns, setAddOns] = useState<Record<string, boolean>>({});
   const [upSizeQty, setUpSizeQty] = useState(0);
-  const [fabricExtra, setFabricExtra] = useState<"emboss" | "jacquard" | null>(
-    null,
-  );
+  const [fabricExtraId, setFabricExtraId] = useState<string | null>(null);
 
   const resolvedCollarId = useMemo(
     () =>
@@ -152,14 +150,14 @@ export function MedusaVariantConfigurator({
   const collar = collarOptions.find((c) => c.id === resolvedCollarId);
   const collarExtra = showCollar ? (collar?.surcharge ?? 0) : 0;
 
-  const embossFabric = addonOptions.find(
-    (o) => o.id === "emboss" && o.group === "fabric-extra",
+  const fabricExtraOptions = useMemo(
+    () => addonOptions.filter((o) => o.group === "fabric-extra"),
+    [addonOptions],
   );
-  const jacquardFabric = addonOptions.find(
-    (o) => o.id === "jacquard" && o.group === "fabric-extra",
+  const selectedFabricOption = fabricExtraOptions.find(
+    (o) => o.id === fabricExtraId,
   );
-  const embossPrice = embossFabric?.price ?? 10_000;
-  const jacquardPrice = jacquardFabric?.price ?? 15_000;
+  const fabricExtraPrice = selectedFabricOption?.price ?? 0;
   const upSizeUnit =
     addonOptions.find((o) => o.id === "up-size" && o.input === "quantity")
       ?.price ?? 10_000;
@@ -173,8 +171,7 @@ export function MedusaVariantConfigurator({
     sum += collarExtra;
     if (effectiveOversize) sum += oversizeSurcharge;
     sum += upSizeQty * upSizeUnit;
-    if (fabricExtra === "emboss") sum += embossPrice;
-    if (fabricExtra === "jacquard") sum += jacquardPrice;
+    sum += fabricExtraPrice;
     for (const opt of addonOptions) {
       if (opt.group === "fabric-extra") continue;
       if (opt.input === "quantity") continue;
@@ -188,9 +185,7 @@ export function MedusaVariantConfigurator({
     effectiveOversize,
     upSizeQty,
     upSizeUnit,
-    fabricExtra,
-    embossPrice,
-    jacquardPrice,
+    fabricExtraPrice,
     addonOptions,
     addOns,
     ultimateIncludes3d,
@@ -235,6 +230,11 @@ export function MedusaVariantConfigurator({
         lines.push(`Untuk olahraga / kegiatan: *${purposeLabel}*`);
       }
     }
+    if (selectedFabricOption) {
+      lines.push(
+        `Kain: *${selectedFabricOption.label}* (+${formatIdr(selectedFabricOption.price)})`,
+      );
+    }
     lines.push(`Perkiraan total: *${formatIdr(total)}*`);
     lines.push("Mohon info MOQ dan jadwal. Terima kasih!");
     return lines.join("\n");
@@ -254,6 +254,7 @@ export function MedusaVariantConfigurator({
     jerseyPurposeOther,
     size,
     oversize,
+    selectedFabricOption,
     total,
   ]);
 
@@ -303,7 +304,7 @@ export function MedusaVariantConfigurator({
       oversize: mode === "single" && oversize ? "yes" : "no",
       collar_id: showCollar ? resolvedCollarId : "",
       collar_label: showCollar ? (collar?.label ?? "") : "",
-      fabric_extra: fabricExtra ?? "",
+      fabric_extra: fabricExtraId ?? "",
       up_size_qty: String(upSizeQty),
       addons_json: JSON.stringify(addonIds),
       estimated_total_idr: String(Math.round(total)),
@@ -550,48 +551,41 @@ export function MedusaVariantConfigurator({
             );
           })}
 
-          <div className="rounded-lg border border-white/10 bg-white/[0.02] p-4">
-            <p className="text-sm font-medium text-foreground">Kain emboss / jacquard</p>
-            <p className="mt-1 text-xs text-muted">Pilih salah satu jika perlu.</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setFabricExtra(null)}
-                className={cn(
-                  "rounded-md border px-3 py-2 text-xs font-semibold uppercase tracking-wide",
-                  fabricExtra === null
-                    ? "border-brand bg-brand/15 text-brand"
-                    : "border-white/15 text-muted hover:text-foreground",
-                )}
-              >
-                Tanpa
-              </button>
-              <button
-                type="button"
-                onClick={() => setFabricExtra("emboss")}
-                className={cn(
-                  "rounded-md border px-3 py-2 text-xs font-semibold",
-                  fabricExtra === "emboss"
-                    ? "border-brand bg-brand/15 text-brand"
-                    : "border-white/15 text-muted hover:text-foreground",
-                )}
-              >
-                Emboss (+{formatIdr(embossPrice)})
-              </button>
-              <button
-                type="button"
-                onClick={() => setFabricExtra("jacquard")}
-                className={cn(
-                  "rounded-md border px-3 py-2 text-xs font-semibold",
-                  fabricExtra === "jacquard"
-                    ? "border-brand bg-brand/15 text-brand"
-                    : "border-white/15 text-muted hover:text-foreground",
-                )}
-              >
-                Jacquard (+{formatIdr(jacquardPrice)})
-              </button>
+          {fabricExtraOptions.length > 0 ? (
+            <div className="rounded-lg border border-white/10 bg-white/[0.02] p-4">
+              <p className="text-sm font-medium text-foreground">Pilihan kain</p>
+              <p className="mt-1 text-xs text-muted">Pilih salah satu jika perlu.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFabricExtraId(null)}
+                  className={cn(
+                    "rounded-md border px-3 py-2 text-xs font-semibold uppercase tracking-wide",
+                    fabricExtraId === null
+                      ? "border-brand bg-brand/15 text-brand"
+                      : "border-white/15 text-muted hover:text-foreground",
+                  )}
+                >
+                  Tanpa
+                </button>
+                {fabricExtraOptions.map((fabric) => (
+                  <button
+                    key={fabric.id}
+                    type="button"
+                    onClick={() => setFabricExtraId(fabric.id)}
+                    className={cn(
+                      "rounded-md border px-3 py-2 text-xs font-semibold",
+                      fabricExtraId === fabric.id
+                        ? "border-brand bg-brand/15 text-brand"
+                        : "border-white/15 text-muted hover:text-foreground",
+                    )}
+                  >
+                    {fabric.label} (+{formatIdr(fabric.price)})
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
       </div>
 

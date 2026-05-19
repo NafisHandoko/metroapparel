@@ -377,7 +377,7 @@ const MetroAddonsSettingsPage = () => {
                         patchRow(i, { groupFabric: e.target.checked })
                       }
                     />
-                    Grup kain emboss/jacquard (satu pilihan di configurator)
+                    Pilihan kain
                   </label>
                 </div>
 

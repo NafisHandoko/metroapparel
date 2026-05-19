@@ -424,21 +424,15 @@ export function computeMetroLineFromMetadata(
     sum += upExtra;
   }
 
-  const fabric = metadata.fabric_extra ?? "";
-  if (fabric === "emboss") {
-    const opt = addonCatalog.find(
-      (o) => o.id === "emboss" && o.group === "fabric-extra",
+  const fabricId = metadata.fabric_extra ?? "";
+  if (fabricId) {
+    const fabricOpt = addonCatalog.find(
+      (o) => o.id === fabricId && o.group === "fabric-extra",
     );
-    const amt = opt?.price ?? 10_000;
-    breakdown.push({ label: opt?.label ?? "Kain emboss", amount: amt });
-    sum += amt;
-  } else if (fabric === "jacquard") {
-    const opt = addonCatalog.find(
-      (o) => o.id === "jacquard" && o.group === "fabric-extra",
-    );
-    const amt = opt?.price ?? 15_000;
-    breakdown.push({ label: opt?.label ?? "Kain jacquard", amount: amt });
-    sum += amt;
+    if (fabricOpt) {
+      breakdown.push({ label: fabricOpt.label, amount: fabricOpt.price });
+      sum += fabricOpt.price;
+    }
   }
 
   const ultimateIncludes3d =
