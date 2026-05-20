@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { cn } from "@/lib/utils";
 
@@ -14,11 +14,82 @@ type ProductImageGalleryProps = {
   productName: string;
 };
 
+function useDragScroll() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const hasMoved = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onMouseDown = (e: MouseEvent) => {
+      isDragging.current = true;
+      hasMoved.current = false;
+      container.classList.add("cursor-grabbing");
+      container.classList.remove("cursor-grab");
+      startX.current = e.pageX - container.offsetLeft;
+      scrollLeft.current = container.scrollLeft;
+    };
+
+    const onMouseUp = () => {
+      isDragging.current = false;
+      container.classList.remove("cursor-grabbing");
+      container.classList.add("cursor-grab");
+    };
+
+    const onMouseLeave = () => {
+      if (isDragging.current) {
+        isDragging.current = false;
+        container.classList.remove("cursor-grabbing");
+        container.classList.add("cursor-grab");
+      }
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+      const x = e.pageX - container.offsetLeft;
+      const walk = x - startX.current;
+      if (Math.abs(walk) > 3) {
+        hasMoved.current = true;
+        e.preventDefault();
+        container.scrollLeft = scrollLeft.current - walk * 1.5;
+      }
+    };
+
+    const onClick = (e: MouseEvent) => {
+      if (hasMoved.current) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    container.addEventListener("mousedown", onMouseDown);
+    container.addEventListener("mouseup", onMouseUp);
+    container.addEventListener("mouseleave", onMouseLeave);
+    container.addEventListener("mousemove", onMouseMove);
+    container.addEventListener("click", onClick, true);
+
+    return () => {
+      container.removeEventListener("mousedown", onMouseDown);
+      container.removeEventListener("mouseup", onMouseUp);
+      container.removeEventListener("mouseleave", onMouseLeave);
+      container.removeEventListener("mousemove", onMouseMove);
+      container.removeEventListener("click", onClick, true);
+    };
+  }, []);
+
+  return containerRef;
+}
+
 export function ProductImageGallery({
   images,
   productName,
 }: ProductImageGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const thumbnailContainerRef = useDragScroll();
 
   const goToPrevious = useCallback(() => {
     setActiveIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -103,7 +174,18 @@ export function ProductImageGallery({
       </div>
 
       {hasMultipleImages ? (
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div
+          ref={thumbnailContainerRef}
+          className={cn(
+            "flex gap-2 overflow-x-auto pb-2 cursor-grab select-none",
+            "scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20 hover:scrollbar-thumb-white/30",
+            "[&::-webkit-scrollbar]:h-1",
+            "[&::-webkit-scrollbar-track]:bg-transparent",
+            "[&::-webkit-scrollbar-thumb]:rounded-full",
+            "[&::-webkit-scrollbar-thumb]:bg-white/15",
+            "[&:hover::-webkit-scrollbar-thumb]:bg-white/25",
+          )}
+        >
           {images.map((img, index) => (
             <button
               key={img.id}
@@ -121,7 +203,7 @@ export function ProductImageGallery({
                 src={img.url}
                 alt={`${productName} - Thumbnail ${index + 1}`}
                 fill
-                className="object-cover"
+                className="object-cover pointer-events-none"
                 sizes="64px"
               />
             </button>
