@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 import { Badge } from "@/components/ui/badge";
 import { formatIdr } from "@/lib/data/catalog";
 import type { Product } from "@/lib/data/site";
@@ -30,7 +30,7 @@ export function ProductCard({ product }: ProductCardProps) {
       >
         <Card className="h-full overflow-hidden border-white/10 transition-[box-shadow,border-color] duration-500 hover:border-brand/45 hover:shadow-[0_20px_48px_-16px_rgba(158,255,0,0.28)]">
           <div className="relative aspect-[4/5] overflow-hidden bg-surface">
-            <Image
+            <OptimizedImage
               src={product.image}
               alt={product.name}
               fill
