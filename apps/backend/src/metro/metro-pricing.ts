@@ -350,6 +350,10 @@ export function showCollarPickerForProductHandle(handle: string): boolean {
   return handle === "jersey-atasan" || handle === "jersey-satu-set";
 }
 
+export function showCollarPickerForCategory(categorySlug: string | undefined): boolean {
+  return categorySlug === "custom-jersey";
+}
+
 export type ComputeMetroLineInput = {
   metadata: Record<string, string>;
   addonCatalog: AdditionalOption[];

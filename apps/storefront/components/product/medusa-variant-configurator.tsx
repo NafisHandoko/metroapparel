@@ -15,7 +15,7 @@ import {
   jerseyPurposeOptions,
   jerseyPurposeOtherMaxChars,
   oversizeSurcharge,
-  showCollarPickerForProductHandle,
+  showCollarPickerForCategory,
   sizeOptions,
   type AdditionalOption,
   type CollarOption,
@@ -110,7 +110,7 @@ export function MedusaVariantConfigurator({
   );
 
   const productHandle = product.handle ?? "";
-  const showCollar = showCollarPickerForProductHandle(productHandle);
+  const showCollar = showCollarPickerForCategory(categorySlug);
   const showJerseyPurpose = isCustomJerseyCategorySlug(categorySlug);
   const jerseyKind: ProductKind | null = useMemo(() => {
     if (productHandle === "jersey-atasan") return "jersey-top";

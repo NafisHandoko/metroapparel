@@ -12,7 +12,7 @@ import { z } from "zod";
 import {
   computeMetroLineFromMetadata,
   inferJerseyKindFromProductHandle,
-  showCollarPickerForProductHandle,
+  showCollarPickerForCategory,
 } from "../../../../../metro/metro-pricing";
 import {
   getResolvedAddonCatalogForProduct,
@@ -30,10 +30,12 @@ const BodySchema = z.object({
 });
 
 type VariantRow = { id: string; sku?: string | null; product_id?: string | null };
+type CategoryRow = { id: string; handle?: string | null };
 type ProductRow = {
   id: string;
   handle?: string | null;
   metadata?: Record<string, unknown> | null;
+  categories?: CategoryRow[] | null;
 };
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
@@ -72,13 +74,15 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
   const { data: products } = await query.graph({
     entity: "product",
-    fields: ["id", "handle", "metadata"],
+    fields: ["id", "handle", "metadata", "categories.id", "categories.handle"],
     filters: { id: variant.product_id },
   });
   const product = products?.[0] as ProductRow | undefined;
   if (!product?.id) {
     throw new MedusaError(MedusaError.Types.NOT_FOUND, "Product not found");
   }
+
+  const categorySlug = product.categories?.[0]?.handle ?? "";
 
   const handle =
     typeof body.metadata.product_handle === "string"
@@ -128,7 +132,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   );
 
   const productKind = inferJerseyKindFromProductHandle(handle.trim());
-  const applyCollar = showCollarPickerForProductHandle(handle.trim());
+  const applyCollar = showCollarPickerForCategory(categorySlug);
 
   const { total, breakdown } = computeMetroLineFromMetadata({
     metadata: body.metadata,

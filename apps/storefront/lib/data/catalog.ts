@@ -327,6 +327,10 @@ export function showCollarPickerForProductHandle(handle: string): boolean {
   return handle === "jersey-atasan" || handle === "jersey-satu-set";
 }
 
+export function showCollarPickerForCategory(categorySlug: string | undefined): boolean {
+  return categorySlug === "custom-jersey";
+}
+
 /** Pilihan keperluan jersey custom — disimpan di metadata baris keranjang / order. */
 export type JerseyPurposeOption = { id: string; label: string };
 
