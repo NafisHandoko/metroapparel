@@ -14,6 +14,44 @@ type ProductImageGalleryProps = {
   productName: string;
 };
 
+type ZoomState = {
+  isZooming: boolean;
+  x: number;
+  y: number;
+};
+
+function useImageZoom() {
+  const [zoom, setZoom] = useState<ZoomState>({ isZooming: false, x: 50, y: 50 });
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    setZoom({ isZooming: true, x, y });
+  }, []);
+
+  const handleMouseEnter = useCallback(() => {
+    setZoom((prev) => ({ ...prev, isZooming: true }));
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setZoom({ isZooming: false, x: 50, y: 50 });
+  }, []);
+
+  return {
+    containerRef,
+    zoom,
+    handleMouseMove,
+    handleMouseEnter,
+    handleMouseLeave,
+  };
+}
+
 function useDragScroll() {
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -90,6 +128,13 @@ export function ProductImageGallery({
 }: ProductImageGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const thumbnailContainerRef = useDragScroll();
+  const {
+    containerRef: zoomContainerRef,
+    zoom,
+    handleMouseMove,
+    handleMouseEnter,
+    handleMouseLeave,
+  } = useImageZoom();
 
   const goToPrevious = useCallback(() => {
     setActiveIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -112,20 +157,44 @@ export function ProductImageGallery({
   const activeImage = images[activeIndex];
   const hasMultipleImages = images.length > 1;
 
+  const zoomScale = 3;
+
   return (
     <div className="flex flex-col gap-3 min-w-0 w-full">
-      <div className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/10 bg-surface lg:aspect-[3/4]">
+      <div
+        ref={zoomContainerRef}
+        onMouseMove={handleMouseMove}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/10 bg-surface lg:aspect-[3/4] cursor-zoom-in"
+      >
         <OptimizedImage
           src={activeImage.url}
           alt={`${productName} - Gambar ${activeIndex + 1}`}
           fill
           priority
-          className="object-cover transition-opacity duration-300"
+          className={cn(
+            "object-cover transition-transform duration-200 ease-out",
+            zoom.isZooming && "duration-0"
+          )}
+          style={
+            zoom.isZooming
+              ? {
+                  transform: `scale(${zoomScale})`,
+                  transformOrigin: `${zoom.x}% ${zoom.y}%`,
+                }
+              : undefined
+          }
           sizes="(max-width: 1024px) 100vw, 50vw"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+        <div
+          className={cn(
+            "absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent transition-opacity duration-200",
+            zoom.isZooming && "opacity-0"
+          )}
+        />
 
-        {hasMultipleImages ? (
+        {hasMultipleImages && !zoom.isZooming ? (
           <>
             <button
               type="button"
