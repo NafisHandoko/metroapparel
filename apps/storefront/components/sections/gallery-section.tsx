@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useReducedMotion } from "framer-motion";
 
 import { InfiniteMarquee } from "@/components/motion/infinite-marquee";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 import { Reveal } from "@/components/motion/reveal";
 import { useSiteContent } from "@/components/site-content-provider";
 import { cn } from "@/lib/utils";
@@ -17,7 +17,7 @@ function GallerySlide({ src, index, isMobile }: { src: string; index: number; is
         "sm:w-64 md:w-72 lg:w-80",
       )}
     >
-      <Image
+      <OptimizedImage
         src={src}
         alt={`Galeri jersey ${index + 1}`}
         fill

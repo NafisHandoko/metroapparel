@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { MedusaVariantConfigurator } from "@/components/product/medusa-variant-configurator";
+import { ProductImageGallery } from "@/components/product/product-image-gallery";
 import { BreadcrumbJsonLd, ProductJsonLd } from "@/components/seo/json-ld";
 import { Badge } from "@/components/ui/badge";
 import { formatIdr } from "@/lib/data/catalog";
@@ -114,17 +114,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
             ← Kembali ke katalog
           </Link>
         <div className="mt-8 grid gap-10 lg:grid-cols-2 lg:gap-14">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/10 bg-surface lg:aspect-[3/4]">
-            <Image
-              src={summary.image}
-              alt={summary.name}
-              fill
-              priority
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 50vw"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
-          </div>
+          <ProductImageGallery
+            images={
+              raw.images?.length
+                ? raw.images.map((img) => ({ id: img.id, url: img.url }))
+                : [{ id: "fallback", url: summary.image }]
+            }
+            productName={summary.name}
+          />
           <div className="flex flex-col justify-center">
             <Badge className="w-fit">{summary.category}</Badge>
             <h1 className="mt-4 font-display text-4xl tracking-tight text-foreground sm:text-5xl md:text-6xl">

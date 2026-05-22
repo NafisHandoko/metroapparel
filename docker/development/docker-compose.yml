@@ -43,6 +43,7 @@ services:
       - NODE_ENV=development
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/medusa-store
       - REDIS_URL=redis://redis:6379
+      - MEDUSA_BACKEND_URL=http://localhost:9000
     env_file:
       - ../../apps/backend/.env
     volumes:
@@ -75,6 +76,7 @@ services:
       - "8000:8000"
     environment:
       - MEDUSA_BACKEND_INTERNAL_URL=http://medusa:9000
+      - MEDUSA_BACKEND_URL=http://localhost:9000
     env_file:
       - ../../apps/storefront/.env
     volumes:
