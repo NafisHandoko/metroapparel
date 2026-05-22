@@ -21,6 +21,7 @@ module.exports = defineConfig({
   },
   admin: {
     backendUrl: process.env.MEDUSA_BACKEND_URL,
+    maxUploadFileSize: 5 * 1024 * 1024, // 5 MB
     vite: (config) => {
       return {
         server: {
