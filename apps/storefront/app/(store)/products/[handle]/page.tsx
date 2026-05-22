@@ -122,9 +122,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
             }
             productName={summary.name}
           />
-          <div className="flex flex-col justify-center">
+          <div className="flex flex-col justify-center min-w-0">
             <Badge className="w-fit">{summary.category}</Badge>
-            <h1 className="mt-4 font-display text-4xl tracking-tight text-foreground sm:text-5xl md:text-6xl">
+            <h1 className="mt-4 font-display text-3xl tracking-tight text-foreground break-words sm:text-5xl md:text-6xl">
               {summary.name}
             </h1>
             {raw.subtitle ? (

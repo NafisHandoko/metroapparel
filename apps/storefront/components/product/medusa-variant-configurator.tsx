@@ -372,7 +372,7 @@ export function MedusaVariantConfigurator({
   }
 
   return (
-    <div className="mt-10 space-y-10 border-t border-white/10 pt-10">
+    <div className="mt-10 space-y-10 border-t border-white/10 pt-10 min-w-0 w-full">
       {options.map((opt) => {
         const allowed = selectableValuesForOption(
           variants,
@@ -420,17 +420,17 @@ export function MedusaVariantConfigurator({
                   v.value,
                 );
                 return (
-                  <button
-                    key={v.id}
-                    type="button"
-                    onClick={() => onPickOptionValue(opt.id, v.value)}
-                    className={cn(
-                      "max-w-[min(100%,18rem)] rounded-md border px-3 py-2 text-left text-sm font-semibold transition-colors",
-                      currentVal === v.value
-                        ? "border-brand bg-brand/15 text-brand"
-                        : "border-white/15 text-muted hover:border-white/30 hover:text-foreground",
-                    )}
-                  >
+                                  <button
+                                    key={v.id}
+                                    type="button"
+                                    onClick={() => onPickOptionValue(opt.id, v.value)}
+                                    className={cn(
+                                      "max-w-[min(100%,18rem)] rounded-md border px-3 py-2 text-left text-sm font-semibold transition-colors break-words",
+                                      currentVal === v.value
+                                        ? "border-brand bg-brand/15 text-brand"
+                                        : "border-white/15 text-muted hover:border-white/30 hover:text-foreground",
+                                    )}
+                                  >
                     <span>{v.value}</span>
                     {amt !== null ? (
                       <span className="mt-0.5 block text-xs font-medium text-brand/90">
@@ -764,12 +764,12 @@ export function MedusaVariantConfigurator({
         ) : null}
       </div>
 
-      <div className="rounded-xl border border-brand/25 bg-brand/5 p-6">
+      <div className="rounded-xl border border-brand/25 bg-brand/5 p-4 sm:p-6 min-w-0">
         <p className="text-xs font-semibold uppercase tracking-widest text-brand">
           Estimasi Per Produk
         </p>
-        <p className="mt-2 font-display text-3xl text-foreground">{formatIdr(total)}</p>
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <p className="mt-2 font-display text-3xl text-foreground break-words">{formatIdr(total)}</p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap min-w-0">
           <Button asChild size="xl" className="w-full sm:w-auto">
             <a href={waHref} target="_blank" rel="noreferrer">
               Kirim ringkasan ke WhatsApp

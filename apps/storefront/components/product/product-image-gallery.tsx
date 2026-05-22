@@ -113,7 +113,7 @@ export function ProductImageGallery({
   const hasMultipleImages = images.length > 1;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 min-w-0 w-full">
       <div className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/10 bg-surface lg:aspect-[3/4]">
         <OptimizedImage
           src={activeImage.url}
