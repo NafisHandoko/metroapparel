@@ -121,3 +121,85 @@ export async function getMetroProductByHandle(
     return null;
   }
 }
+
+/**
+ * Fetch collection by handle dari Medusa Store API.
+ */
+export async function getCollectionByHandle(
+  handle: string,
+): Promise<HttpTypes.StoreCollection | null> {
+  if (!process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    return null;
+  }
+
+  try {
+    const { collections } = await sdk.client.fetch<{
+      collections: HttpTypes.StoreCollection[];
+    }>("/store/collections", {
+      method: "GET",
+      query: {
+        handle,
+        limit: 1,
+      },
+      cache: "no-store",
+    });
+
+    return collections?.[0] ?? null;
+  } catch (e) {
+    console.error(`Gagal memuat collection "${handle}":`, e);
+    return null;
+  }
+}
+
+/**
+ * Fetch produk berdasarkan collection handle.
+ * Berguna untuk menampilkan produk di section seperti Featured Products.
+ */
+export async function listProductsByCollectionHandle(
+  collectionHandle: string,
+): Promise<Product[]> {
+  if (!process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    console.warn(
+      "NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY is unset — katalog Medusa tidak dimuat.",
+    );
+    return [];
+  }
+
+  const collection = await getCollectionByHandle(collectionHandle);
+  if (!collection) {
+    console.warn(`Collection "${collectionHandle}" tidak ditemukan.`);
+    return [];
+  }
+
+  const region = await getRegion(defaultCountryCode());
+  if (!region) {
+    console.warn("Tidak ada region Medusa untuk negara default.");
+    return [];
+  }
+
+  try {
+    const { products } = await sdk.client.fetch<{
+      products: HttpTypes.StoreProduct[];
+      count: number;
+    }>("/store/products", {
+      method: "GET",
+      query: {
+        region_id: region.id,
+        country_code: defaultCountryCode(),
+        collection_id: collection.id,
+        fields: PRODUCT_LIST_FIELDS,
+      },
+      cache: "no-store",
+    });
+
+    return (products ?? [])
+      .map(mapStoreProductToProduct)
+      .filter((x): x is Product => x !== null);
+  } catch (e) {
+    console.error(
+      `Gagal memuat produk dari collection "${collectionHandle}":`,
+      e,
+    );
+    return [];
+  }
+}
