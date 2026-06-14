@@ -157,7 +157,7 @@ export function ProductImageGallery({
   const activeImage = images[activeIndex];
   const hasMultipleImages = images.length > 1;
 
-  const zoomScale = 3;
+  const zoomScale = 1.5;
 
   return (
     <div className="flex flex-col gap-3 min-w-0 w-full">
