@@ -15,7 +15,7 @@ const dmSans = DM_Sans({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://metroapparel.web.id";
+const siteUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://metroapparel.web.id";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

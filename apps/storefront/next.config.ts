@@ -64,6 +64,11 @@ const nextConfig: NextConfig = {
         hostname: "admin.metroapparel.web.id",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "admin.metroapparel.nafishandoko.my.id",
+        pathname: "/**"
+      }
     ],
   },
 };

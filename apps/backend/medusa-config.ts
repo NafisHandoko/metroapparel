@@ -31,6 +31,7 @@ module.exports = defineConfig({
             ".localhost",
             "127.0.0.1",
             "admin.metroapparel.web.id",
+            "admin.metroapparel.nafishandoko.my.id"
           ],
           hmr: {
             port: 5173,

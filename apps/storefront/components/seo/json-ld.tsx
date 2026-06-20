@@ -1,7 +1,7 @@
 import type { MetroSiteContentV1 } from "@/lib/medusa/site-content-types";
 import type { Product } from "@/lib/data/site";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://metroapparel.web.id";
+const siteUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://metroapparel.web.id";
 
 export type OrganizationJsonLdProps = {
   content: MetroSiteContentV1;
