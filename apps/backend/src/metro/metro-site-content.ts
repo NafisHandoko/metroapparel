@@ -78,7 +78,13 @@ const heroUrlsSchema = z
 const heroSplitWrapperSchema = z.object({
   v: z.literal(1),
   urls: heroUrlsSchema,
+  tagline: z.string().max(500).default(""),
+  heading: z.string().max(300).default(""),
+  headingAccent: z.string().max(300).default(""),
+  description: z.string().max(2000).default(""),
 });
+
+export type MetroSiteHeroV1 = z.infer<typeof heroSplitWrapperSchema>;
 
 export const metroSiteContentV1Schema = z.object({
   v: z.literal(1),
@@ -92,9 +98,13 @@ export const metroSiteContentV1Schema = z.object({
 /** Isi legacy `metro_site_content_json` (tanpa hero — hero pakai kunci terpisah). */
 export type MetroSiteContentBaseV1 = z.infer<typeof metroSiteContentV1Schema>;
 
-/** Konten storefront lengkap termasuk URL latar hero (metadata `metro_site_hero_json`). */
+/** Konten storefront lengkap termasuk hero & sponsorship (metadata kunci terpisah). */
 export type MetroSiteContentV1 = MetroSiteContentBaseV1 & {
   heroBackgroundUrls: string[];
+  heroTagline: string;
+  heroHeading: string;
+  heroHeadingAccent: string;
+  heroDescription: string;
   /** FAQ halaman program sponsorship (`metro_site_sponsorship_faq_json`). */
   sponsorshipFaq: z.infer<typeof faqSchema>[];
 };
@@ -106,6 +116,10 @@ export const metroSiteGalleryPostSchema = z.object({
 
 export const metroSiteHeroPostSchema = z.object({
   urls: heroUrlsSchema,
+  tagline: z.string().max(500).optional(),
+  heading: z.string().max(300).optional(),
+  headingAccent: z.string().max(300).optional(),
+  description: z.string().max(2000).optional(),
 });
 
 export const metroSiteClientsPostSchema = z.object({
@@ -146,6 +160,10 @@ export function parseMetroSiteContentFromMetadata(
       ? {
           ...r.data,
           heroBackgroundUrls: [],
+          heroTagline: "",
+          heroHeading: "",
+          heroHeadingAccent: "",
+          heroDescription: "",
           sponsorshipFaq: defaultSponsorshipFaq(),
         }
       : null;
@@ -175,14 +193,24 @@ export function parseGalleryUrlsFromStoreMetadata(raw: unknown): string[] | null
 }
 
 export function parseHeroUrlsFromStoreMetadata(raw: unknown): string[] | null {
+  const h = parseHeroFromStoreMetadata(raw);
+  return h?.urls ?? null;
+}
+
+export function parseHeroFromStoreMetadata(
+  raw: unknown,
+): MetroSiteHeroV1 | null {
   const parsed = parseJsonValue(raw);
   if (parsed == null) return null;
   if (Array.isArray(parsed)) {
+    // format lama: array string saja — bungkus ke wrapper
     const r = heroUrlsSchema.safeParse(parsed);
-    return r.success ? r.data : null;
+    return r.success
+      ? { v: 1 as const, urls: r.data, tagline: "", heading: "", headingAccent: "", description: "" }
+      : null;
   }
   const w = heroSplitWrapperSchema.safeParse(parsed);
-  return w.success ? w.data.urls : null;
+  return w.success ? w.data : null;
 }
 
 export function parseClientsFromStoreMetadata(
@@ -313,6 +341,11 @@ export function defaultMetroSiteContent(): MetroSiteContentV1 {
     ],
     sponsorshipFaq: defaultSponsorshipFaq(),
     heroBackgroundUrls: [],
+    heroTagline: "Jersey tim · Sekolah · Komunitas · Event",
+    heroHeading: "PEDE DI LAPANGAN",
+    heroHeadingAccent: "MULAI DARI JERSEY-NYA",
+    heroDescription:
+      "Mau jersey buat futsal sekolah, turnamen bareng komunitas, atau acara kampus? Bahan enak dipakai, desain bisa kamu utak-atik bareng kami — produksi di Kota Jombang.",
   };
 }
 
@@ -361,9 +394,19 @@ export function resolveMetroSiteContent(
     legacy?.faq ??
     def.faq;
 
+  const heroFromMeta =
+    parseHeroFromStoreMetadata(m[METRO_SITE_HERO_METADATA_KEY]);
+
   const heroBackgroundUrls =
-    parseHeroUrlsFromStoreMetadata(m[METRO_SITE_HERO_METADATA_KEY]) ??
-    def.heroBackgroundUrls;
+    heroFromMeta?.urls ?? def.heroBackgroundUrls;
+  const heroTagline =
+    heroFromMeta?.tagline || def.heroTagline;
+  const heroHeading =
+    heroFromMeta?.heading || def.heroHeading;
+  const heroHeadingAccent =
+    heroFromMeta?.headingAccent || def.heroHeadingAccent;
+  const heroDescription =
+    heroFromMeta?.description || def.heroDescription;
 
   const sponsorshipFaq =
     parseSponsorshipFaqFromStoreMetadata(
@@ -378,6 +421,10 @@ export function resolveMetroSiteContent(
     testimonials,
     faq,
     heroBackgroundUrls,
+    heroTagline,
+    heroHeading,
+    heroHeadingAccent,
+    heroDescription,
     sponsorshipFaq,
   };
 }
@@ -390,7 +437,15 @@ export function mergeMetroSiteContent(rawLegacyBlob: unknown): MetroSiteContentV
 }
 
 export function serializeMetroSiteContent(content: MetroSiteContentV1): string {
-  const { heroBackgroundUrls: _hero, ...rest } = content;
+  const {
+    heroBackgroundUrls: _hero,
+    heroTagline: _ht,
+    heroHeading: _hh,
+    heroHeadingAccent: _hha,
+    heroDescription: _hd,
+    sponsorshipFaq: _sf,
+    ...rest
+  } = content;
   return JSON.stringify(rest);
 }
 
@@ -402,8 +457,21 @@ export function serializeMetroSiteGallery(urls: string[]): string {
   return JSON.stringify({ v: 1 as const, urls });
 }
 
-export function serializeMetroSiteHero(urls: string[]): string {
-  return JSON.stringify({ v: 1 as const, urls });
+export function serializeMetroSiteHero(
+  urls: string[],
+  tagline?: string,
+  heading?: string,
+  headingAccent?: string,
+  description?: string,
+): string {
+  return JSON.stringify({
+    v: 1 as const,
+    urls,
+    tagline: tagline ?? "",
+    heading: heading ?? "",
+    headingAccent: headingAccent ?? "",
+    description: description ?? "",
+  });
 }
 
 export function serializeMetroSiteClients(
@@ -528,7 +596,13 @@ export function splitSiteContentDefaultsForSeed(): Record<string, string> {
   return {
     [METRO_SITE_COMPANY_METADATA_KEY]: serializeMetroSiteCompany(d.company),
     [METRO_SITE_GALLERY_METADATA_KEY]: serializeMetroSiteGallery(d.gallery),
-    [METRO_SITE_HERO_METADATA_KEY]: serializeMetroSiteHero(d.heroBackgroundUrls),
+    [METRO_SITE_HERO_METADATA_KEY]: serializeMetroSiteHero(
+      d.heroBackgroundUrls,
+      d.heroTagline,
+      d.heroHeading,
+      d.heroHeadingAccent,
+      d.heroDescription,
+    ),
     [METRO_SITE_CLIENTS_METADATA_KEY]: serializeMetroSiteClients(d.clients),
     [METRO_SITE_TESTIMONIALS_METADATA_KEY]: serializeMetroSiteTestimonials(
       d.testimonials,
