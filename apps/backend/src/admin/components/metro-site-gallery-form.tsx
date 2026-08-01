@@ -1,6 +1,8 @@
 import { DotsSix, Trash } from "@medusajs/icons";
 import { Button, Input, Label, Text, toast } from "@medusajs/ui";
 import {
+  memo,
+  useCallback,
   useRef,
   useState,
   type DragEvent,
@@ -66,6 +68,92 @@ export type MetroSiteGalleryFormProps = {
   uploadSuccessToastHint?: string;
 };
 
+// ─── Gallery Item (memoized) ──────────────────────────────────────────────
+
+type GalleryItemProps = {
+  url: string;
+  index: number;
+  onDragStart: (e: DragEvent, index: number) => void;
+  onDragEnd: () => void;
+  onDragOver: (e: DragEvent, index: number) => void;
+  onDragLeave: (e: DragEvent) => void;
+  onDrop: (e: DragEvent, index: number) => void;
+  onRemove: (index: number) => void;
+  isDragging: boolean;
+};
+
+const GalleryItem = memo(function GalleryItem({
+  url,
+  index,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onRemove,
+  isDragging,
+}: GalleryItemProps) {
+  return (
+    <li
+      data-gallery-index={index}
+      className="group relative overflow-hidden rounded-lg border border-ui-border-base bg-ui-bg-subtle transition-shadow"
+      onDragOver={(e) => onDragOver(e, index)}
+      onDragLeave={onDragLeave}
+      onDrop={(e) => onDrop(e, index)}
+    >
+      <div
+        draggable
+        onDragStart={(e) => onDragStart(e, index)}
+        onDragEnd={onDragEnd}
+        className={`relative aspect-[4/5] w-full cursor-grab touch-none bg-ui-bg-base active:cursor-grabbing ${
+          isDragging ? "opacity-60" : ""
+        }`}
+      >
+        <div
+          className="pointer-events-none absolute left-1.5 top-1.5 z-[1] flex h-7 w-7 items-center justify-center rounded border border-white/25 bg-black/45 text-white/95 shadow-sm"
+          title="Seret untuk mengurut ulang"
+          aria-hidden
+        >
+          <DotsSix className="h-4 w-4" />
+        </div>
+        <img
+          src={url}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          loading="lazy"
+          draggable={false}
+        />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent px-2 pb-2 pt-10">
+          <p
+            className="line-clamp-2 break-all text-[10px] leading-snug text-white/95"
+            title={url}
+          >
+            {url}
+          </p>
+        </div>
+        <div className="absolute right-1.5 top-1.5 z-[1]">
+          <Button
+            type="button"
+            variant="secondary"
+            size="small"
+            className="h-8 w-8 border border-red-500/40 bg-ui-bg-base p-0 text-red-600 shadow-sm hover:bg-red-500/10"
+            title="Hapus gambar ini"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove(index);
+            }}
+          >
+            <Trash className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </li>
+  );
+});
+
+// ─── Main Form Component ──────────────────────────────────────────────────
+
 export function MetroSiteGalleryForm({
   urls,
   onUrlsChange,
@@ -81,9 +169,42 @@ export function MetroSiteGalleryForm({
   const [draggingGalleryIndex, setDraggingGalleryIndex] = useState<number | null>(
     null,
   );
-  const [dragOverGalleryIndex, setDragOverGalleryIndex] = useState<number | null>(
-    null,
-  );
+
+  // ── Drag-over highlight via ref (no React re-render) ──────────────────
+  const dragOverRef = useRef<number | null>(null);
+
+  const clearDragOverHighlight = useCallback(() => {
+    if (dragOverRef.current === null) return;
+    const el = document.querySelector(
+      `[data-gallery-index="${dragOverRef.current}"]`,
+    );
+    if (el) {
+      el.classList.remove("border-ui-border-interactive", "ring-2", "ring-ui-border-interactive");
+      el.classList.add("border-ui-border-base");
+    }
+    dragOverRef.current = null;
+  }, []);
+
+  const setDragOverHighlight = useCallback((index: number) => {
+    if (dragOverRef.current === index) return;
+    // Clear previous
+    if (dragOverRef.current !== null) {
+      const prev = document.querySelector(
+        `[data-gallery-index="${dragOverRef.current}"]`,
+      );
+      if (prev) {
+        prev.classList.remove("border-ui-border-interactive", "ring-2", "ring-ui-border-interactive");
+        prev.classList.add("border-ui-border-base");
+      }
+    }
+    // Set new
+    const next = document.querySelector(`[data-gallery-index="${index}"]`);
+    if (next) {
+      next.classList.add("border-ui-border-interactive", "ring-2", "ring-ui-border-interactive");
+      next.classList.remove("border-ui-border-base");
+    }
+    dragOverRef.current = index;
+  }, []);
 
   const uploadGalleryImages = async (fileList: FileList | null) => {
     if (!fileList?.length) return;
@@ -143,13 +264,16 @@ export function MetroSiteGalleryForm({
     }
   };
 
-  const removeGalleryAt = (index: number) => {
-    if (urls.length <= minUrls) {
-      toast.error(`Minimal ${minUrls} gambar.`);
-      return;
-    }
-    onUrlsChange(urls.filter((_, i) => i !== index));
-  };
+  const removeGalleryAt = useCallback(
+    (index: number) => {
+      if (urls.length <= minUrls) {
+        toast.error(`Minimal ${minUrls} gambar.`);
+        return;
+      }
+      onUrlsChange(urls.filter((_, i) => i !== index));
+    },
+    [urls, minUrls, onUrlsChange],
+  );
 
   const addGalleryUrlFromDraft = () => {
     const raw = galleryUrlDraft.trim();
@@ -172,48 +296,55 @@ export function MetroSiteGalleryForm({
     toast.success(`Gambar ditambahkan dari URL. ${uploadSuccessToastHint}`);
   };
 
-  const handleGalleryDragStart = (e: DragEvent, index: number) => {
+  // ── Drag handlers (stable references via useCallback) ─────────────────
+
+  const handleGalleryDragStart = useCallback((_e: DragEvent, index: number) => {
     galleryDragFromRef.current = index;
     setDraggingGalleryIndex(index);
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", String(index));
-  };
+    _e.dataTransfer.effectAllowed = "move";
+    _e.dataTransfer.setData("text/plain", String(index));
+  }, []);
 
-  const handleGalleryDragEnd = () => {
+  const handleGalleryDragEnd = useCallback(() => {
     galleryDragFromRef.current = null;
     setDraggingGalleryIndex(null);
-    setDragOverGalleryIndex(null);
-  };
+    clearDragOverHighlight();
+  }, [clearDragOverHighlight]);
 
-  const handleGalleryDragOver = (e: DragEvent, index: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    const from = galleryDragFromRef.current;
-    if (from !== null && from !== index) {
-      setDragOverGalleryIndex(index);
-    }
-  };
+  const handleGalleryDragOver = useCallback(
+    (e: DragEvent, index: number) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      const from = galleryDragFromRef.current;
+      if (from !== null && from !== index) {
+        setDragOverHighlight(index);
+      }
+    },
+    [setDragOverHighlight],
+  );
 
-  const handleGalleryDragLeave = (e: DragEvent) => {
+  const handleGalleryDragLeave = useCallback((e: DragEvent) => {
     const next = e.relatedTarget as Node | null;
     if (next && e.currentTarget.contains(next)) return;
-    setDragOverGalleryIndex(null);
-  };
+    clearDragOverHighlight();
+  }, [clearDragOverHighlight]);
 
-  const handleGalleryDrop = (e: DragEvent, toIndex: number) => {
-    e.preventDefault();
-    const fromIndex = Number.parseInt(e.dataTransfer.getData("text/plain"), 10);
-    if (Number.isNaN(fromIndex) || fromIndex === toIndex) {
+  const handleGalleryDrop = useCallback(
+    (e: DragEvent, toIndex: number) => {
+      e.preventDefault();
+      clearDragOverHighlight();
+      const fromIndex = Number.parseInt(e.dataTransfer.getData("text/plain"), 10);
+      if (Number.isNaN(fromIndex) || fromIndex === toIndex) {
+        galleryDragFromRef.current = null;
+        setDraggingGalleryIndex(null);
+        return;
+      }
+      onUrlsChange(reorderGalleryItems(urls, fromIndex, toIndex));
       galleryDragFromRef.current = null;
       setDraggingGalleryIndex(null);
-      setDragOverGalleryIndex(null);
-      return;
-    }
-    onUrlsChange(reorderGalleryItems(urls, fromIndex, toIndex));
-    galleryDragFromRef.current = null;
-    setDraggingGalleryIndex(null);
-    setDragOverGalleryIndex(null);
-  };
+    },
+    [urls, onUrlsChange, clearDragOverHighlight],
+  );
 
   return (
     <div className="space-y-4">
@@ -271,65 +402,18 @@ export function MetroSiteGalleryForm({
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {urls.map((url, index) => (
-            <li
-              key={`${index}-${url.slice(0, 48)}`}
-              className={`group relative overflow-hidden rounded-lg border bg-ui-bg-subtle transition-shadow ${
-                dragOverGalleryIndex === index
-                  ? "border-ui-border-interactive ring-2 ring-ui-border-interactive"
-                  : "border-ui-border-base"
-              }`}
-              onDragOver={(e) => handleGalleryDragOver(e, index)}
+            <GalleryItem
+              key={url}
+              url={url}
+              index={index}
+              onDragStart={handleGalleryDragStart}
+              onDragEnd={handleGalleryDragEnd}
+              onDragOver={handleGalleryDragOver}
               onDragLeave={handleGalleryDragLeave}
-              onDrop={(e) => handleGalleryDrop(e, index)}
-            >
-              <div
-                draggable
-                onDragStart={(e) => handleGalleryDragStart(e, index)}
-                onDragEnd={handleGalleryDragEnd}
-                className={`relative aspect-[4/5] w-full cursor-grab touch-none bg-ui-bg-base active:cursor-grabbing ${
-                  draggingGalleryIndex === index ? "opacity-60" : ""
-                }`}
-              >
-                <div
-                  className="pointer-events-none absolute left-1.5 top-1.5 z-[1] flex h-7 w-7 items-center justify-center rounded border border-white/25 bg-black/45 text-white/95 shadow-sm"
-                  title="Seret untuk mengurut ulang"
-                  aria-hidden
-                >
-                  <DotsSix className="h-4 w-4" />
-                </div>
-                <img
-                  src={url}
-                  alt=""
-                  className="absolute inset-0 h-full w-full object-cover"
-                  loading="lazy"
-                  draggable={false}
-                />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent px-2 pb-2 pt-10">
-                  <p
-                    className="line-clamp-2 break-all text-[10px] leading-snug text-white/95"
-                    title={url}
-                  >
-                    {url}
-                  </p>
-                </div>
-                <div className="absolute right-1.5 top-1.5 z-[1]">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="small"
-                    className="h-8 w-8 border border-red-500/40 bg-ui-bg-base p-0 text-red-600 shadow-sm hover:bg-red-500/10"
-                    title="Hapus gambar ini"
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeGalleryAt(index);
-                    }}
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </li>
+              onDrop={handleGalleryDrop}
+              onRemove={removeGalleryAt}
+              isDragging={draggingGalleryIndex === index}
+            />
           ))}
         </ul>
       )}
