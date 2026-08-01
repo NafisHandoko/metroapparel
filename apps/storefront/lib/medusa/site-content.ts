@@ -33,6 +33,11 @@ function fallbackSiteContent(): MetroSiteContentV1 {
     },
     gallery: [...galleryImages],
     heroBackgroundUrls: [],
+    heroTagline: "Jersey tim · Sekolah · Komunitas · Event",
+    heroHeading: "PEDE DI LAPANGAN",
+    heroHeadingAccent: "MULAI DARI JERSEY-NYA",
+    heroDescription:
+      "Mau jersey buat futsal sekolah, turnamen bareng komunitas, atau acara kampus? Bahan enak dipakai, desain bisa kamu utak-atik bareng kami — produksi di Kota Jombang.",
     clients: clientLogos.map((c) => ({ name: c.name, abbr: c.abbr })),
     testimonials: testimonials.map((t) => ({ ...t })),
     faq: faqItems.map((f) => ({ ...f })),

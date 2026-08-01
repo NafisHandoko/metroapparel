@@ -32,6 +32,14 @@ export type MetroSiteContentV1 = {
   gallery: string[];
   /** URL latar hero beranda (0–8), dari metadata `metro_site_hero_json`; kosong = tidak ada gambar. */
   heroBackgroundUrls: string[];
+  /** Teks tagline di hero (baris kecil di atas judul). */
+  heroTagline: string;
+  /** Judul hero baris pertama (warna putih). */
+  heroHeading: string;
+  /** Judul hero baris kedua (warna aksen/brand). */
+  heroHeadingAccent: string;
+  /** Deskripsi / paragraf di bawah judul hero. */
+  heroDescription: string;
   clients: MetroSiteClientV1[];
   testimonials: MetroSiteTestimonialV1[];
   faq: MetroSiteFaqV1[];

@@ -20,6 +20,10 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   res.status(200).json({
     store_id: store.id,
     urls: content.heroBackgroundUrls,
+    tagline: content.heroTagline,
+    heading: content.heroHeading,
+    headingAccent: content.heroHeadingAccent,
+    description: content.heroDescription,
     is_default_template: isMetroSiteHeroSectionDefault(store.metadata),
   });
 }
@@ -45,7 +49,13 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
   const mergedMetadata = {
     ...(store.metadata ?? {}),
-    [METRO_SITE_HERO_METADATA_KEY]: serializeMetroSiteHero(parsed.data.urls),
+    [METRO_SITE_HERO_METADATA_KEY]: serializeMetroSiteHero(
+      parsed.data.urls,
+      parsed.data.tagline,
+      parsed.data.heading,
+      parsed.data.headingAccent,
+      parsed.data.description,
+    ),
   };
 
   await updateStoresWorkflow(req.scope).run({
@@ -56,5 +66,12 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   });
 
   const content = resolveMetroSiteContent(mergedMetadata);
-  res.status(200).json({ ok: true, urls: content.heroBackgroundUrls });
+  res.status(200).json({
+    ok: true,
+    urls: content.heroBackgroundUrls,
+    tagline: content.heroTagline,
+    heading: content.heroHeading,
+    headingAccent: content.heroHeadingAccent,
+    description: content.heroDescription,
+  });
 }

@@ -45,7 +45,7 @@ const textItem = {
 };
 
 export function HeroSection() {
-  const { company, heroBackgroundUrls } = useSiteContent();
+  const { company, heroBackgroundUrls, heroTagline, heroHeading, heroHeadingAccent, heroDescription } = useSiteContent();
   const prefersReducedMotion = useReducedMotion();
   const isMobile = useIsMobile();
   const reduce = prefersReducedMotion || isMobile;
@@ -246,22 +246,22 @@ export function HeroSection() {
             variants={textItemVariants}
             className="text-xs font-semibold uppercase tracking-[0.35em] text-brand"
           >
-            Jersey tim · Sekolah · Komunitas · Event
+            {heroTagline}
           </motion.p>
           <motion.h1
             variants={textItemVariants}
             className="font-display text-5xl font-bold leading-[0.95] tracking-tight text-foreground sm:text-6xl md:text-7xl lg:text-7xl"
           >
-            PEDE DI LAPANGAN
+            {heroHeading}
             <span className="mt-1 block text-brand drop-shadow-[0_0_28px_rgba(158,255,0,0.35)]">
-              MULAI DARI JERSEY-NYA
+              {heroHeadingAccent}
             </span>
           </motion.h1>
           <motion.p
             variants={textItemVariants}
             className="max-w-xl text-lg leading-relaxed text-muted sm:text-xl"
           >
-            Mau jersey buat futsal sekolah, turnamen bareng komunitas, atau acara kampus? Bahan enak dipakai, desain bisa kamu utak-atik bareng kami — produksi di Kota Jombang.
+            {heroDescription}
           </motion.p>
         </motion.div>
         <motion.div
