@@ -403,7 +403,7 @@ export function MetroSiteGalleryForm({
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {urls.map((url, index) => (
             <GalleryItem
-              key={url}
+              key={`${index}-${url.slice(0, 48)}`}
               url={url}
               index={index}
               onDragStart={handleGalleryDragStart}
