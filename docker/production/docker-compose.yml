@@ -46,7 +46,7 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_network"
       # Router untuk Admin Panel
-      - "traefik.http.routers.medusa.rule=Host(`admin.metroapparel.web.id`)"
+      - "traefik.http.routers.medusa.rule=Host(`admin.${DOMAIN}`)"
       - "traefik.http.routers.medusa.entrypoints=websecure"
       - "traefik.http.routers.medusa.tls.certresolver=letsencrypt"
       - "traefik.http.services.medusa.loadbalancer.server.port=9000"
@@ -89,7 +89,7 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_network"
       # Router untuk Storefront
-      - "traefik.http.routers.storefront.rule=Host(`metroapparel.web.id`)"
+      - "traefik.http.routers.storefront.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.storefront.entrypoints=websecure"
       - "traefik.http.routers.storefront.tls.certresolver=letsencrypt"
       - "traefik.http.services.storefront.loadbalancer.server.port=8000"
