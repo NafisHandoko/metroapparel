@@ -15,7 +15,7 @@ import {
 import { getResolvedSiteContent } from "@/lib/medusa/site-content";
 import type { Metadata } from "next";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://metroapparel.web.id";
+const siteUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://metroapparel.web.id";
 
 export async function generateMetadata(): Promise<Metadata> {
   const content = await getResolvedSiteContent();

@@ -19,7 +19,7 @@ import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://metroapparel.web.id";
+const siteUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://metroapparel.web.id";
 
 type PageProps = { params: Promise<{ handle: string }> };
 

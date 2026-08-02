@@ -38,10 +38,10 @@ services:
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET}
       - COOKIE_SECRET=${COOKIE_SECRET}
-      - MEDUSA_BACKEND_URL=https://admin.metroapparel.web.id
-      - STORE_CORS=https://metroapparel.web.id
-      - ADMIN_CORS=https://admin.metroapparel.web.id
-      - AUTH_CORS=https://admin.metroapparel.web.id
+      - MEDUSA_BACKEND_URL=${NEXT_PUBLIC_MEDUSA_BACKEND_URL}
+      - STORE_CORS=${NEXT_PUBLIC_BASE_URL}
+      - ADMIN_CORS=${NEXT_PUBLIC_MEDUSA_BACKEND_URL}
+      - AUTH_CORS=${NEXT_PUBLIC_MEDUSA_BACKEND_URL}
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_network"
@@ -68,9 +68,9 @@ services:
       dockerfile: docker/production/Dockerfile.storefront
       args:
         - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}
-        - NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://admin.metroapparel.web.id
-        - NEXT_PUBLIC_BASE_URL=https://metroapparel.web.id
-        - NEXT_PUBLIC_DEFAULT_REGION=id
+        - NEXT_PUBLIC_MEDUSA_BACKEND_URL=${NEXT_PUBLIC_MEDUSA_BACKEND_URL}
+        - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
+        - NEXT_PUBLIC_DEFAULT_REGION=${NEXT_PUBLIC_DEFAULT_REGION}
     container_name: metroapparel_storefront
     restart: always
     depends_on:
@@ -82,9 +82,9 @@ services:
       - NODE_ENV=production
       - MEDUSA_BACKEND_INTERNAL_URL=http://medusa:9000
       - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}
-      - NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://admin.metroapparel.web.id
-      - NEXT_PUBLIC_BASE_URL=https://metroapparel.web.id
-      - NEXT_PUBLIC_DEFAULT_REGION=id
+      - NEXT_PUBLIC_MEDUSA_BACKEND_URL=${NEXT_PUBLIC_MEDUSA_BACKEND_URL}
+      - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
+      - NEXT_PUBLIC_DEFAULT_REGION=${NEXT_PUBLIC_DEFAULT_REGION}
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_network"

@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { listMetroProducts } from "@/lib/medusa/products";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://metroapparel.web.id";
+const siteUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://metroapparel.web.id";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
